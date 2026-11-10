@@ -1,0 +1,288 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/detailSeriesOverlay"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/obsidian_bg">
+
+    <ImageView
+        android:id="@+id/seriesDetailBackdrop"
+        android:layout_width="680dp"
+        android:layout_height="290dp"
+        android:layout_gravity="top|end"
+        android:scaleType="centerCrop"
+        android:contentDescription="Series Backdrop" />
+
+    <View
+        android:layout_width="560dp"
+        android:layout_height="match_parent"
+        android:layout_gravity="start"
+        android:background="@drawable/bg_hero_scrim_left" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="260dp"
+        android:layout_gravity="bottom"
+        android:background="@drawable/bg_hero_scrim_bottom" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:paddingStart="28dp"
+        android:paddingEnd="28dp"
+        android:paddingTop="16dp"
+        android:paddingBottom="16dp">
+
+        <!-- Top Row -->
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentStart="true"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:id="@+id/btnSeriesDetailBack"
+                    android:layout_width="wrap_content"
+                    android:layout_height="32dp"
+                    android:gravity="center"
+                    android:paddingStart="14dp"
+                    android:paddingEnd="14dp"
+                    android:background="@drawable/selector_pill_secondary"
+                    android:text="←  Back"
+                    android:textColor="#F8FAFC"
+                    android:textSize="11.5sp"
+                    android:textStyle="bold"
+                    android:focusable="true"
+                    android:clickable="true" />
+
+                <TextView
+                    android:id="@+id/seriesTypeTag"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="10dp"
+                    android:background="@drawable/bg_pill"
+                    android:paddingStart="9dp"
+                    android:paddingEnd="9dp"
+                    android:paddingTop="3dp"
+                    android:paddingBottom="3dp"
+                    android:text="TV SERIES"
+                    android:textColor="#9CA3AF"
+                    android:textSize="9.5sp"
+                    android:textStyle="bold"
+                    android:fontFamily="monospace" />
+            </LinearLayout>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true"
+                android:text="JewFlix"
+                android:textColor="#FFFFFF"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:fontFamily="sans-serif-black" />
+        </RelativeLayout>
+
+        <!-- Compact Series Hero -->
+        <LinearLayout
+            android:layout_width="530dp"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginTop="10dp">
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:id="@+id/seriesDetailRating"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/bg_pill_gold"
+                    android:paddingStart="8dp"
+                    android:paddingEnd="8dp"
+                    android:paddingTop="2dp"
+                    android:paddingBottom="2dp"
+                    android:text="★ 9.0 IMDb"
+                    android:textColor="#FBBF24"
+                    android:textSize="10sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/seriesDetailYear"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="7dp"
+                    android:background="@drawable/bg_pill"
+                    android:paddingStart="8dp"
+                    android:paddingEnd="8dp"
+                    android:paddingTop="2dp"
+                    android:paddingBottom="2dp"
+                    android:text="2008–2013"
+                    android:textColor="#E2E8F0"
+                    android:textSize="10sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/seriesDetailCounts"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="7dp"
+                    android:background="@drawable/bg_pill"
+                    android:paddingStart="8dp"
+                    android:paddingEnd="8dp"
+                    android:paddingTop="2dp"
+                    android:paddingBottom="2dp"
+                    android:text="Loading episodes..."
+                    android:textColor="#CBD5E1"
+                    android:textSize="10sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/seriesDetailGenres"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:textColor="#9CA3AF"
+                    android:textSize="10sp"
+                    android:maxLines="1"
+                    android:ellipsize="end" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/seriesDetailTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="7dp"
+                android:text="BREAKING BAD"
+                android:textColor="#FFFFFF"
+                android:textSize="26sp"
+                android:textStyle="bold"
+                android:maxLines="1"
+                android:ellipsize="end" />
+
+            <TextView
+                android:id="@+id/seriesDetailOverview"
+                android:layout_width="480dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="5dp"
+                android:textColor="#CBD5E1"
+                android:textSize="11sp"
+                android:lineSpacingExtra="1.5dp"
+                android:maxLines="2"
+                android:ellipsize="end" />
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="11dp">
+
+                <TextView
+                    android:id="@+id/btnSeriesResume"
+                    android:layout_width="wrap_content"
+                    android:layout_height="34dp"
+                    android:gravity="center"
+                    android:paddingStart="18dp"
+                    android:paddingEnd="18dp"
+                    android:background="@drawable/selector_pill_primary"
+                    android:text="▶  Play S01 · E01"
+                    android:textColor="#050507"
+                    android:textSize="11.5sp"
+                    android:textStyle="bold"
+                    android:focusable="true"
+                    android:clickable="true" />
+
+                <TextView
+                    android:id="@+id/btnSeriesLibrary"
+                    android:layout_width="wrap_content"
+                    android:layout_height="34dp"
+                    android:layout_marginStart="10dp"
+                    android:gravity="center"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="16dp"
+                    android:background="@drawable/selector_pill_secondary"
+                    android:text="+ Library"
+                    android:textColor="#F8FAFC"
+                    android:textSize="11.5sp"
+                    android:textStyle="bold"
+                    android:focusable="true"
+                    android:clickable="true" />
+
+                <TextView
+                    android:id="@+id/btnSeriesPickSource"
+                    android:layout_width="wrap_content"
+                    android:layout_height="34dp"
+                    android:layout_marginStart="10dp"
+                    android:gravity="center"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="16dp"
+                    android:background="@drawable/selector_pill_secondary"
+                    android:text="Pick Episode Source"
+                    android:textColor="#F8FAFC"
+                    android:textSize="11.5sp"
+                    android:textStyle="bold"
+                    android:focusable="true"
+                    android:clickable="true" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- HORIZONTAL SEASON TABS -->
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="34dp"
+            android:layout_marginTop="14dp">
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvSeriesSeasons"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_toStartOf="@+id/tvSeriesHoldHint"
+                android:layout_marginEnd="12dp"
+                android:clipToPadding="false" />
+
+            <TextView
+                android:id="@+id/tvSeriesHoldHint"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true"
+                android:text="Hold OK to mark watched"
+                android:textColor="#6E7687"
+                android:textSize="10sp" />
+        </RelativeLayout>
+
+        <!-- EPISODES HORIZONTAL CARDS SHELF -->
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:layout_marginTop="10dp">
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvSeriesEpisodes"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:clipToPadding="false" />
+
+            <TextView
+                android:id="@+id/tvSeriesEpLoading"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:text="Loading episodes..."
+                android:textColor="#6E7687"
+                android:textSize="12sp"
+                android:visibility="gone" />
+        </FrameLayout>
+    </LinearLayout>
+</FrameLayout>

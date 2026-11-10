@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="196dp"
+    android:layout_height="112dp"
+    android:layout_marginEnd="12dp"
+    android:focusable="true"
+    android:clickable="true"
+    android:background="@drawable/selector_poster_card"
+    android:clipToOutline="true">
+
+    <ImageView
+        android:id="@+id/cwBackdrop"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="centerCrop"
+        android:contentDescription="Continue Watching" />
+
+    <!-- Bottom vignette -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:layout_gravity="bottom"
+        android:background="@drawable/bg_hero_scrim_bottom" />
+
+    <!-- Top-Left Title + Episode Pill -->
+    <TextView
+        android:id="@+id/cwLabelPill"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|start"
+        android:layout_margin="8dp"
+        android:maxWidth="176dp"
+        android:background="#CC050507"
+        android:paddingStart="8dp"
+        android:paddingEnd="8dp"
+        android:paddingTop="3dp"
+        android:paddingBottom="3dp"
+        android:text="Title"
+        android:textColor="#F8FAFC"
+        android:textSize="10sp"
+        android:textStyle="bold"
+        android:maxLines="1"
+        android:ellipsize="end" />
+
+    <!-- Bottom-Right time remaining -->
+    <TextView
+        android:id="@+id/cwTimeLeft"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_marginEnd="8dp"
+        android:layout_marginBottom="9dp"
+        android:text="11m left"
+        android:textColor="#E2E8F0"
+        android:textSize="10sp"
+        android:textStyle="bold" />
+
+    <!-- Bottom Progress Bar -->
+    <ProgressBar
+        android:id="@+id/cwProgress"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="match_parent"
+        android:layout_height="3.5dp"
+        android:layout_gravity="bottom"
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginBottom="4dp"
+        android:max="1000"
+        android:progress="400"
+        android:progressDrawable="@drawable/bg_resume_progress" />
+
+</FrameLayout>

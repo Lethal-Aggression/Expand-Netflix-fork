@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/screenLibrary"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:paddingStart="28dp"
+    android:paddingEnd="28dp"
+    android:paddingTop="18dp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="My Library"
+        android:textColor="#FFFFFF"
+        android:textSize="21sp"
+        android:textStyle="bold" />
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="12dp">
+
+        <TextView
+            android:id="@+id/tabLibWatchlist"
+            android:layout_width="wrap_content"
+            android:layout_height="30dp"
+            android:layout_marginEnd="10dp"
+            android:gravity="center"
+            android:paddingStart="14dp"
+            android:paddingEnd="14dp"
+            android:background="@drawable/selector_chip_pill"
+            android:text="Watchlist"
+            android:textColor="@color/color_chip_text"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:focusable="true"
+            android:clickable="true" />
+
+        <TextView
+            android:id="@+id/tabLibHistory"
+            android:layout_width="wrap_content"
+            android:layout_height="30dp"
+            android:gravity="center"
+            android:paddingStart="14dp"
+            android:paddingEnd="14dp"
+            android:background="@drawable/selector_chip_pill"
+            android:text="Recently Watched"
+            android:textColor="@color/color_chip_text"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:focusable="true"
+            android:clickable="true" />
+    </LinearLayout>
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:layout_marginTop="12dp">
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvLibraryGrid"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:paddingBottom="18dp"
+            android:clipToPadding="false" />
+
+        <TextView
+            android:id="@+id/tvLibraryEmpty"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:text="Nothing saved yet. Open any title and press + Library."
+            android:textColor="#6E7687"
+            android:textSize="13sp"
+            android:visibility="gone" />
+    </FrameLayout>
+</LinearLayout>
