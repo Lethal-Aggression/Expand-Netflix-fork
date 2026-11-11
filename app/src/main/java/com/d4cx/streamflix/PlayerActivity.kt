@@ -1,6 +1,7 @@
 package com.d4cx.streamflix
 
 import android.app.Activity
+import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
 import android.graphics.Color
@@ -78,6 +79,13 @@ class PlayerActivity : Activity() {
     private lateinit var tvMenuTitle: TextView
     private lateinit var rvMenuOptions: RecyclerView
 
+    @Volatile private var disposed = false
+    private val playbackSession = java.util.UUID.randomUUID().toString()
+    private var recoveryAttempts = 0
+    private var errorDialog: AlertDialog? = null
+    private val requestGeneration = java.util.concurrent.atomic.AtomicInteger()
+    private val subtitleGeneration = java.util.concurrent.atomic.AtomicInteger()
+    private var activeStream: StreamItem? = null
     private var player: ExoPlayer? = null
     private var mediaSourceFactory: DefaultMediaSourceFactory? = null
     private var dataSourceFactory: DefaultDataSource.Factory? = null
@@ -101,6 +109,8 @@ class PlayerActivity : Activity() {
     private var activeSubtitleLang: String? = null
     private var hasAutoSelectedAudio = false
 
+    private var broadcastItems:List<ArabicBroadcast> = emptyList()
+    private var broadcastIndex=0
     private var mediaType: String = "series"
     private var mediaId: String = ""
     private var mediaTitle: String = ""
@@ -141,10 +151,8 @@ class PlayerActivity : Activity() {
                             val mb = completed / (1024.0 * 1024.0)
                             val speedMb = speed / (1024.0 * 1024.0)
                             val peers = if (activePeers > 0) activePeers else totalPeers
-                            Log.d("EXO-DEBUG", String.format(Locale.US, "[POLL] Speed=%.2f MB/s, Cached=%.1f MB, Peers=%d (act=%d, tot=%d), State=%d, Pos=%d ms, Buf=%d ms",
-                                speedMb, mb, peers, activePeers, totalPeers, player?.playbackState ?: -1, player?.currentPosition ?: -1, player?.bufferedPosition ?: -1))
                             mainHandler.post {
-                                if (!isStatsPolling) return@post
+                                if (!isStatsPolling || disposed) return@post
                                 val qLabel = curStream.quality
                                 tvPlayerStreamBadge.text = if (speedMb > 0.05) {
                                     String.format(Locale.US, "%s • %.1f MB/s • %d peers", qLabel, speedMb, peers)
@@ -175,6 +183,7 @@ class PlayerActivity : Activity() {
     private val updateProgressRunnable = object : Runnable {
         override fun run() {
             val p = player
+            findViewById<TitleLoadingView>(R.id.loadingTitle).setFill(if(p!=null && p.bufferedPosition>p.currentPosition) ((p.bufferedPosition-p.currentPosition)/4000f).coerceIn(0f,1f) else -1f)
             if (p != null && !isScrubbing && !isUserTrackingSeek && !seekBar.hasFocus() && p.duration > 0) {
                 val position = p.currentPosition
                 val duration = p.duration
@@ -205,6 +214,7 @@ class PlayerActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        JewEngineManager.beginPlayback(this,playbackSession)
         setContentView(R.layout.activity_player)
 
         window.decorView.systemUiVisibility = (
@@ -219,6 +229,7 @@ class PlayerActivity : Activity() {
         mediaType = intent.getStringExtra(EXTRA_MEDIA_TYPE) ?: "series"
         mediaId = intent.getStringExtra(EXTRA_MEDIA_ID) ?: ""
         mediaTitle = intent.getStringExtra(EXTRA_TITLE) ?: "JewFlix Player"
+        findViewById<TitleLoadingView>(R.id.loadingTitle).text=mediaTitle.substringBefore(" — ")
         mediaPoster = intent.getStringExtra(EXTRA_POSTER) ?: ""
         mediaBackdrop = intent.getStringExtra(EXTRA_BACKDROP) ?: ""
         seasonNum = intent.getIntExtra(EXTRA_SEASON, 1)
@@ -231,6 +242,13 @@ class PlayerActivity : Activity() {
 
         startStatsPolling()
 
+        val broadcastId=intent.getStringExtra("broadcast_page")
+        if(broadcastId!=null){
+            broadcastItems=pendingBroadcasts;broadcastIndex=intent.getIntExtra("broadcast_index",0)
+            if(broadcastItems.getOrNull(broadcastIndex)?.page!=broadcastId){broadcastItems=emptyList()}
+            val row=broadcastItems.getOrNull(broadcastIndex)
+            if(row!=null){playBroadcast(broadcastIndex);return}
+        }
         val directUrl = intent.getStringExtra(EXTRA_STREAM_URL)
         if (!directUrl.isNullOrEmpty()) {
             showBuffering("Starting engine & stream...")
@@ -253,6 +271,20 @@ class PlayerActivity : Activity() {
         } else {
             resolveAndPlayStream()
         }
+    }
+
+    private fun playBroadcast(index:Int){
+        val item=broadcastItems.getOrNull(index)?:return
+        saveCurrentPlaybackState();broadcastIndex=index
+        mediaType="movie" // Independent full broadcast timeline, never overwrite story-episode history.
+        mediaId="broadcast:"+java.security.MessageDigest.getInstance("SHA-256").digest(item.page.toByteArray()).joinToString(""){"%02x".format(it)}
+        mediaTitle=item.label;seasonNum=1;episodeNum=1
+        findViewById<TitleLoadingView>(R.id.loadingTitle).text=item.label
+        hasResumedInitialPosition=false
+        val stream=ArabicBroadcasts.stream(item)
+        availableStreams=listOf(stream);currentStreamIndex=0;updateHeaderTitle()
+        val position=WatchHistoryManager.getPlaybackPosition(this,mediaType,mediaId,1,1)
+        playStreamItem(stream,position)
     }
 
     private fun streamSessionKey(): String = "${mediaType}_${mediaId}_s${seasonNum}_e${episodeNum}"
@@ -331,11 +363,11 @@ class PlayerActivity : Activity() {
             .setBufferDurationsMs(
                 /* minBufferMs = */ 30_000,
                 /* maxBufferMs = */ 90_000,
-                /* bufferForPlaybackMs = */ 5_000,
+                /* bufferForPlaybackMs = */ 4_000,
                 /* bufferForPlaybackAfterRebufferMs = */ 8_000
             )
-            .setTargetBufferBytes(128 * 1024 * 1024)
-            .setPrioritizeTimeOverSizeThresholds(true)
+            .setTargetBufferBytes(48 * 1024 * 1024)
+            .setPrioritizeTimeOverSizeThresholds(false)
             .build()
 
         val httpDataSourceFactory = DefaultHttpDataSource.Factory()
@@ -344,11 +376,15 @@ class PlayerActivity : Activity() {
             .setConnectTimeoutMs(45_000)
             .setReadTimeoutMs(60_000)
 
-        val dsf = DefaultDataSource.Factory(this, httpDataSourceFactory)
+        val dsf = DefaultDataSource.Factory(this, PlaybackCache.factory(this,httpDataSourceFactory))
         this.dataSourceFactory = dsf
 
-        val extractorsFactory = DefaultExtractorsFactory()
-            .setConstantBitrateSeekingEnabled(true)
+        val standardExtractors = DefaultExtractorsFactory().setConstantBitrateSeekingEnabled(true)
+        val extractorsFactory = androidx.media3.extractor.ExtractorsFactory {
+            standardExtractors.createExtractors().map { extractor ->
+                if(extractor is androidx.media3.extractor.mkv.MatroskaExtractor) androidx.media3.extractor.mkv.JewMatroskaExtractor() else extractor
+            }.toTypedArray()
+        }
 
         val msFactory = DefaultMediaSourceFactory(dsf, extractorsFactory)
             .setLoadErrorHandlingPolicy(DefaultLoadErrorHandlingPolicy(6))
@@ -408,13 +444,14 @@ class PlayerActivity : Activity() {
                                 backdrop = mediaBackdrop
                             )
                         }
-                        JewEngineManager.wipeCache(this@PlayerActivity)
+                        JewEngineManager.releasePlayback(playbackSession)
                     }
                     Player.STATE_IDLE -> hideBuffering()
                 }
             }
 
             override fun onRenderedFirstFrame() {
+                activeStream?.let { SourceHealth.record(this@PlayerActivity,it,true) }
                 isFirstFrameRendered = true
                 hideBuffering()
             }
@@ -435,26 +472,34 @@ class PlayerActivity : Activity() {
             }
 
             override fun onPlayerError(error: PlaybackException) {
-                Log.e("EXO-DEBUG", "Stream error: ${error.errorCodeName} (${error.message})")
-                if (!isFirstFrameRendered) {
-                    hideBuffering()
-                    showHud()
-                    val currentPos = player?.currentPosition ?: 0L
-                    Toast.makeText(
-                        this@PlayerActivity,
-                        "Stream slow (${error.errorCodeName}) — switching source...",
-                        Toast.LENGTH_SHORT
-                    ).show()
-
-                    if (currentStreamIndex + 1 < availableStreams.size) {
-                        currentStreamIndex++
-                        playStreamItem(availableStreams[currentStreamIndex], resumePositionMs = currentPos)
-                    }
+                if (disposed) return
+                val position=player?.currentPosition ?: 0L
+                val recoverable=error.errorCode in 2000..2999
+                if(recoverable && recoveryAttempts<2){
+                    recoveryAttempts++
+                    val generation=requestGeneration.get()
+                    showBuffering("Reconnecting · attempt $recoveryAttempts of 2")
+                    mainHandler.postDelayed({
+                        if(!disposed && !isFinishing && requestGeneration.get()==generation){
+                            player?.seekTo(position);player?.prepare();player?.playWhenReady=true
+                        }
+                    }, (recoveryAttempts*1000).toLong())
+                } else if(currentStreamIndex+1<availableStreams.size){
+                    activeStream?.let { SourceHealth.record(this@PlayerActivity,it,false) }
+                    currentStreamIndex++
+                    playStreamItem(availableStreams[currentStreamIndex],position)
                 } else {
-                    // Mid-playback glitch: don't abandon the movie, let player re-sync
-                    showBuffering()
+                    activeStream?.let { SourceHealth.record(this@PlayerActivity,it,false) }
+                    hideBuffering();showHud();errorDialog?.dismiss()
+                    errorDialog=AlertDialog.Builder(this@PlayerActivity)
+                        .setTitle("Playback interrupted")
+                        .setMessage("This source could not continue. Your position is saved.")
+                        .setPositiveButton("Retry"){_,_->recoveryAttempts=0;player?.prepare();player?.playWhenReady=true}
+                        .setNeutralButton("Sources"){_,_->showSourcesMenu()}
+                        .setNegativeButton("Back"){_,_->finish()}.show()
                 }
             }
+
         })
 
         mainHandler.post(updateProgressRunnable)
@@ -576,6 +621,7 @@ class PlayerActivity : Activity() {
         }
 
         btnPrev.setOnClickListener {
+            if(broadcastItems.isNotEmpty()){playBroadcast(broadcastIndex-1);return@setOnClickListener}
             if (!mediaType.equals("movie", ignoreCase = true) && episodeNum > 1) {
                 saveCurrentPlaybackState()
                 episodeNum--
@@ -588,6 +634,7 @@ class PlayerActivity : Activity() {
         }
 
         btnNext.setOnClickListener {
+            if(broadcastItems.isNotEmpty()){playBroadcast(broadcastIndex+1);return@setOnClickListener}
             if (!mediaType.equals("movie", ignoreCase = true)) {
                 saveCurrentPlaybackState()
                 episodeNum++
@@ -799,11 +846,12 @@ class PlayerActivity : Activity() {
     private fun loadSubtitlesInBackground() {
         backgroundExecutor.execute {
             val subs = SubtitleRepository.fetchSubtitles(mediaType, mediaId, seasonNum, episodeNum)
-            mainHandler.post { openSubtitlesList = subs }
+            mainHandler.post { if(!disposed)openSubtitlesList = subs }
         }
     }
 
     private fun resolveAndPlayStream() {
+        val generation=requestGeneration.incrementAndGet()
         showBuffering("Finding best stream...")
         hasResumedInitialPosition = false
         backgroundExecutor.execute {
@@ -815,6 +863,7 @@ class PlayerActivity : Activity() {
                 episode = episodeNum,
                 context = this@PlayerActivity
             )
+            if(disposed || generation!=requestGeneration.get()) return@execute
             availableStreams = streams
             currentStreamIndex = 0
             val savedPos = WatchHistoryManager.getPlaybackPosition(
@@ -822,6 +871,7 @@ class PlayerActivity : Activity() {
             )
 
             mainHandler.post {
+                if(disposed || generation!=requestGeneration.get()) return@post
                 if (streams.isNotEmpty()) {
                     playStreamItem(streams[0], resumePositionMs = savedPos)
                     if (savedPos > 10_000) showSeekOsd("Resuming (${formatTime(savedPos)})")
@@ -838,6 +888,10 @@ class PlayerActivity : Activity() {
     }
 
     private fun playStreamItem(stream: StreamItem, resumePositionMs: Long = 0L) {
+        if(disposed)return
+        val generation=requestGeneration.incrementAndGet()
+        activeStream=stream;recoveryAttempts=0
+        JewEngineManager.beginPlayback(this,playbackSession)
         playbackRequestTimestamp = System.currentTimeMillis()
         isFirstFrameRendered = false
 
@@ -845,13 +899,21 @@ class PlayerActivity : Activity() {
         tvPlayerStreamBadge.text = "${stream.quality} • Initializing..."
         backgroundExecutor.execute {
             JewEngineManager.ensureRunning(this@PlayerActivity)
-            val streamUrl = StreamRepository.resolvePlayableUrl(stream)
+            if(disposed || generation!=requestGeneration.get())return@execute
+            JewEngineManager.claimPlayback(playbackSession)
+            val resolved=runCatching{StreamRepository.resolvePlayableUrl(stream,if(mediaType=="series")seasonNum else null,if(mediaType=="series")episodeNum else null)}
+            val streamUrl=resolved.getOrDefault("")
             mainHandler.post {
+                if(disposed || generation!=requestGeneration.get()) return@post
                 if (streamUrl.isNotEmpty()) {
                     playMediaInternal(streamUrl, stream.audioUrl, currentSubtitleConfig, resumePositionMs)
                 } else {
                     hideBuffering()
-                    Toast.makeText(this@PlayerActivity, "Failed to resolve stream URL", Toast.LENGTH_SHORT).show()
+                    SourceHealth.record(this@PlayerActivity,stream,false)
+                    AlertDialog.Builder(this@PlayerActivity).setTitle("Source unavailable")
+                        .setMessage("This provider could not supply a supported video. Try again later or choose another source.")
+                        .setPositiveButton("Retry"){_,_->playStreamItem(stream,resumePositionMs)}
+                        .setNegativeButton("Back"){_,_->finish()}.show()
                 }
             }
         }
@@ -867,8 +929,13 @@ class PlayerActivity : Activity() {
         subConfig: MediaItem.SubtitleConfiguration?,
         resumePositionMs: Long
     ) {
+        if(disposed)return
         val p = player ?: return
-        val factory = mediaSourceFactory ?: return
+        val factory = if(broadcastItems.isNotEmpty()||ArabicBroadcasts.headers(videoUrl).isNotEmpty()) {
+            val http=DefaultHttpDataSource.Factory().setUserAgent("Mozilla/5.0")
+                .setAllowCrossProtocolRedirects(true).setDefaultRequestProperties(ArabicBroadcasts.headers(videoUrl))
+            DefaultMediaSourceFactory(DefaultDataSource.Factory(this,PlaybackCache.factory(this,http)))
+        } else mediaSourceFactory ?: return
         val dsf = dataSourceFactory ?: return
 
         currentPlayingUri = videoUrl
@@ -1175,6 +1242,8 @@ class PlayerActivity : Activity() {
     }
 
     private fun applyOpenSubtitle(sub: SubtitleItem) {
+        val generation=subtitleGeneration.incrementAndGet()
+        val streamGeneration=requestGeneration.get()
         val p = player ?: return
         val currentUri = currentPlayingUri ?: return
         val currentPos = p.currentPosition
@@ -1207,6 +1276,7 @@ class PlayerActivity : Activity() {
             } catch (_: Exception) {}
 
             mainHandler.post {
+                if(disposed || generation!=subtitleGeneration.get() || streamGeneration!=requestGeneration.get()) return@post
                 hideBuffering()
                 if (!fileReady && !sub.url.startsWith("http")) {
                     Toast.makeText(this@PlayerActivity, "Failed to download subtitle file", Toast.LENGTH_SHORT).show()
@@ -1360,9 +1430,7 @@ class PlayerActivity : Activity() {
     override fun onStop() {
         super.onStop()
         saveCurrentPlaybackState()
-        if (isFinishing) {
-            JewEngineManager.wipeCache(this)
-        }
+
     }
 
     override fun onNewIntent(intent: Intent?) {
@@ -1381,6 +1449,8 @@ class PlayerActivity : Activity() {
     }
 
     override fun onDestroy() {
+        disposed=true;requestGeneration.incrementAndGet();subtitleGeneration.incrementAndGet()
+        errorDialog?.dismiss();backgroundExecutor.shutdownNow()
         isStatsPolling = false
         saveCurrentPlaybackState()
         super.onDestroy()
@@ -1388,10 +1458,20 @@ class PlayerActivity : Activity() {
         hideBuffering()
         player?.release()
         player = null
-        JewEngineManager.wipeCache(this)
+        JewEngineManager.releasePlayback(playbackSession)
     }
 
     companion object {
+        private var pendingBroadcasts:List<ArabicBroadcast> = emptyList()
+        fun startBroadcast(context:Context,series:CatalogItem,rows:List<ArabicBroadcast>,index:Int){
+            pendingBroadcasts=rows
+            context.startActivity(Intent(context,PlayerActivity::class.java).apply{
+                putExtra("broadcast_page",rows[index].page);putExtra("broadcast_index",index)
+                putExtra(EXTRA_MEDIA_TYPE,"movie");putExtra(EXTRA_MEDIA_ID,"broadcast")
+                putExtra(EXTRA_TITLE,series.name);putExtra(EXTRA_POSTER,series.poster)
+            })
+        }
+
         const val EXTRA_MEDIA_TYPE = "extra_media_type"
         const val EXTRA_MEDIA_ID = "extra_media_id"
         const val EXTRA_TITLE = "extra_title"

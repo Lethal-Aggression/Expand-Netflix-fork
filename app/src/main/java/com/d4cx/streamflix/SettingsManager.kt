@@ -20,11 +20,11 @@ object SettingsManager {
     }
 
     fun getMaxCacheMB(context: Context): Int {
-        return getPrefs(context).getInt(KEY_MAX_CACHE_MB, DEFAULT_CACHE_MB).coerceIn(200, 800)
+        return getPrefs(context).getInt(KEY_MAX_CACHE_MB, DEFAULT_CACHE_MB).coerceIn(160, 800)
     }
 
     fun setMaxCacheMB(context: Context, mb: Int) {
-        getPrefs(context).edit().putInt(KEY_MAX_CACHE_MB, mb.coerceIn(200, 800)).apply()
+        getPrefs(context).edit().putInt(KEY_MAX_CACHE_MB, mb.coerceIn(160, 800)).apply()
     }
 
     fun isPrewarmEnabled(context: Context): Boolean {

@@ -16,7 +16,7 @@ object CinemetaRepository {
     private val metaCache = ConcurrentHashMap<String, DeepMeta>()
     private val executor = Executors.newFixedThreadPool(5)
 
-    fun getCuratedCartoons(): List<CatalogItem> = listOf(
+    fun getCuratedCartoons(): List<CatalogItem> = (listOf(
         CatalogItem(
             id = "tt3718778",
             name = "Over the Garden Wall (خلف حائط الحديقة)",
@@ -36,7 +36,7 @@ object CinemetaRepository {
             poster = "https://images.metahub.space/poster/small/tt0206512/img",
             backdrop = "https://images.metahub.space/background/medium/tt0206512/img",
             imdbRating = "8.2",
-            description = "Full SpongeBob seasons S01–S12 streaming instantaneously with original Arabic dub audio.",
+            description = "Browse story episodes or Arabic broadcast order. Availability varies by provider.",
             genres = listOf("Animation", "Comedy")
         ),
         CatalogItem(
@@ -47,7 +47,7 @@ object CinemetaRepository {
             poster = "https://images.metahub.space/poster/small/tt1942683/img",
             backdrop = "https://images.metahub.space/background/medium/tt1942683/img",
             imdbRating = "8.4",
-            description = "Gumball and Darwin's misadventures in Elmore with full original Cartoon Network Arabic audio.",
+            description = "Gumball and Darwin's misadventures in Elmore with a separate Arabic broadcast browser.",
             genres = listOf("Animation", "Comedy")
         ),
         CatalogItem(
@@ -91,7 +91,7 @@ object CinemetaRepository {
             poster = "https://images.metahub.space/poster/small/tt0220880/img",
             backdrop = "https://images.metahub.space/background/medium/tt0220880/img",
             imdbRating = "8.3",
-            description = "All 32 classic Arabic Cartoon Network dubbed episodes of Courage protecting Muriel & Eustace.",
+            description = "Browse available Courage episodes and Arabic broadcasts. Provider order may differ from story order.",
             genres = listOf("Animation", "Mystery")
         ),
         CatalogItem(
@@ -116,7 +116,8 @@ object CinemetaRepository {
             description = "Complete Golden Collection 177 shorts in remastered 1080p BluRay.",
             genres = listOf("Animation", "Classic")
         )
-    )
+    ) + CartoonCatalog.extra()).distinctBy { it.id }
+
 
     fun fetchCatalog(type: String): List<CatalogItem> {
         return fetchCatalogFiltered(type, "Popular")
@@ -208,20 +209,6 @@ object CinemetaRepository {
         if (json == null) return emptyList()
 
         val results = parseMetasJson(json, type).toMutableList()
-        if (genre == "Popular") {
-            if (type == "movie") {
-                val curated = getCuratedCartoons().filter { it.type == "movie" || it.id == "tt3718778" }
-                    .map { if (it.id == "tt3718778") it.copy(type = "movie", name = "Over the Garden Wall (الفيلم)") else it }
-                val ids = curated.map { it.id }.toSet()
-                results.removeAll { it.id in ids }
-                results.addAll(0, curated)
-            } else if (type == "series") {
-                val curated = getCuratedCartoons().filter { it.type == "series" }
-                val ids = curated.map { it.id }.toSet()
-                results.removeAll { it.id in ids }
-                results.addAll(0, curated)
-            }
-        }
         return results
     }
 
@@ -414,15 +401,15 @@ object CinemetaRepository {
             var score = 0L
             item.imdbRank?.let { score += (50000 - it * 4).coerceAtLeast(0) }
             item.cinemetaIndex?.let { score += (30000 - it * 1200).coerceAtLeast(0) }
-            if (isKitsu) score += 35000L
+            if (isKitsu) score += 1000L
             if (isJojoQuery && (name.contains("jojo") || name.contains("steel ball") || name.contains("crusader") ||
                         name.contains("stone ocean") || name.contains("golden wind"))) {
                 score += 25000L
             }
             when {
-                name == qClean -> score += if (item.imdbRank != null || item.cinemetaIndex != null) 4000L else 500L
-                name.startsWith(qClean) -> score += 2500L
-                name.contains(qClean) -> score += 1500L
+                name == qClean -> score += if (item.imdbRank != null || item.cinemetaIndex != null) 200000L else 200000L
+                name.startsWith(qClean) -> score += 100000L
+                name.contains(qClean) -> score += 50000L
             }
             item.imdbRating?.toDoubleOrNull()?.let { score += (it * 300).toLong() }
             if (item.poster.length < 15) score -= 10000L
@@ -437,6 +424,14 @@ object CinemetaRepository {
         return sorted
     }
 
+    fun fetchCachedMeta(type:String,id:String):DeepMeta? = metaCache["${type}_$id"]
+    fun nextEpisode(type:String,id:String,season:Int,episode:Int):EpisodeItem? {
+        val meta=metaCache["${type}_$id"] ?: metaCache["series_$id"] ?: return null
+        return meta.videos.sortedWith(compareBy({it.season},{it.episodeNumber})).firstOrNull {
+            (it.season>season || it.season==season&&it.episodeNumber>episode) &&
+            (it.released.isNullOrBlank() || it.released.take(10)<=java.text.SimpleDateFormat("yyyy-MM-dd",java.util.Locale.US).format(java.util.Date()))
+        }
+    }
     fun fetchDeepMeta(type: String, id: String): DeepMeta? {
         val cacheKey = "${type}_$id"
         metaCache[cacheKey]?.let { return it }

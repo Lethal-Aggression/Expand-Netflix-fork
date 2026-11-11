@@ -1,349 +1,45 @@
-<?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/screenSearch"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="horizontal"
-    android:paddingStart="24dp"
-    android:paddingEnd="26dp"
-    android:paddingTop="18dp"
-    android:paddingBottom="16dp">
-
-    <!-- LEFT KEYPAD COLUMN -->
-    <LinearLayout
-        android:layout_width="268dp"
-        android:layout_height="match_parent"
-        android:orientation="vertical"
-        android:paddingEnd="18dp">
-
-        <!-- Search Display / Keyboard Pill -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="40dp"
-            android:background="@drawable/bg_search_box"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:paddingStart="14dp"
-            android:paddingEnd="12dp">
-
-            <EditText
-                android:id="@+id/inputSearch"
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                android:background="@null"
-                android:hint="Search movies, anime..."
-                android:textColorHint="#5A6375"
-                android:textColor="#FFFFFF"
-                android:textSize="13sp"
-                android:singleLine="true"
-                android:imeOptions="actionSearch" />
-
-            <ImageView
-                android:layout_width="16dp"
-                android:layout_height="16dp"
-                android:src="@drawable/ic_nav_search"
-                android:tint="#8E96A4"
-                android:contentDescription="Search" />
-        </LinearLayout>
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="5dp"
-            android:gravity="center"
-            android:text="IMDb Suggest • Cinemeta • Kitsu Anime"
-            android:textColor="#6E7687"
-            android:textSize="9.5sp" />
-
-        <!-- 6-column A-Z + 0-9 keypad -->
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/rvSearchKeypad"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="10dp" />
-
-        <!-- Keypad Action Row: Space, Backspace, Clear -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="32dp"
-            android:layout_marginTop="4dp"
-            android:orientation="horizontal">
-
-            <TextView
-                android:id="@+id/keySpace"
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_weight="2"
-                android:layout_marginEnd="4dp"
-                android:gravity="center"
-                android:background="@drawable/selector_keycap"
-                android:text="SPACE"
-                android:textColor="@color/color_keycap_text"
-                android:textSize="10.5sp"
-                android:textStyle="bold"
-                android:focusable="true"
-                android:clickable="true" />
-
-            <TextView
-                android:id="@+id/keyBackspace"
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                android:layout_marginEnd="4dp"
-                android:gravity="center"
-                android:background="@drawable/selector_keycap"
-                android:text="⌫"
-                android:textColor="@color/color_keycap_text"
-                android:textSize="13sp"
-                android:textStyle="bold"
-                android:focusable="true"
-                android:clickable="true" />
-
-            <TextView
-                android:id="@+id/keyClear"
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                android:gravity="center"
-                android:background="@drawable/selector_keycap"
-                android:text="CLR"
-                android:textColor="@color/color_keycap_text"
-                android:textSize="10sp"
-                android:textStyle="bold"
-                android:focusable="true"
-                android:clickable="true" />
-        </LinearLayout>
-
-        <!-- Quick Suggestion Chips -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:layout_marginTop="10dp">
-
-            <TextView
-                android:id="@+id/chipQuickDune"
-                android:layout_width="wrap_content"
-                android:layout_height="26dp"
-                android:layout_marginEnd="6dp"
-                android:paddingStart="10dp"
-                android:paddingEnd="10dp"
-                android:gravity="center"
-                android:background="@drawable/selector_chip_pill"
-                android:text="Dune"
-                android:textColor="@color/color_chip_text"
-                android:textSize="10sp"
-                android:focusable="true"
-                android:clickable="true" />
-
-            <TextView
-                android:id="@+id/chipQuickJoJo"
-                android:layout_width="wrap_content"
-                android:layout_height="26dp"
-                android:layout_marginEnd="6dp"
-                android:paddingStart="10dp"
-                android:paddingEnd="10dp"
-                android:gravity="center"
-                android:background="@drawable/selector_chip_pill"
-                android:text="JoJo"
-                android:textColor="@color/color_chip_text"
-                android:textSize="10sp"
-                android:focusable="true"
-                android:clickable="true" />
-
-            <TextView
-                android:id="@+id/chipQuickSpongebob"
-                android:layout_width="wrap_content"
-                android:layout_height="26dp"
-                android:paddingStart="10dp"
-                android:paddingEnd="10dp"
-                android:gravity="center"
-                android:background="@drawable/selector_chip_pill"
-                android:text="SpongeBob"
-                android:textColor="@color/color_chip_text"
-                android:textSize="10sp"
-                android:focusable="true"
-                android:clickable="true" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:layout_marginTop="6dp">
-
-            <TextView
-                android:id="@+id/chipQuickBreaking"
-                android:layout_width="wrap_content"
-                android:layout_height="26dp"
-                android:layout_marginEnd="6dp"
-                android:paddingStart="10dp"
-                android:paddingEnd="10dp"
-                android:gravity="center"
-                android:background="@drawable/selector_chip_pill"
-                android:text="Breaking Bad"
-                android:textColor="@color/color_chip_text"
-                android:textSize="10sp"
-                android:focusable="true"
-                android:clickable="true" />
-
-            <TextView
-                android:id="@+id/chipQuickInterstellar"
-                android:layout_width="wrap_content"
-                android:layout_height="26dp"
-                android:paddingStart="10dp"
-                android:paddingEnd="10dp"
-                android:gravity="center"
-                android:background="@drawable/selector_chip_pill"
-                android:text="Interstellar"
-                android:textColor="@color/color_chip_text"
-                android:textSize="10sp"
-                android:focusable="true"
-                android:clickable="true" />
-        </LinearLayout>
+<?xml version='1.0' encoding='utf-8'?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:id="@+id/screenSearch" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="horizontal" android:paddingStart="24dp" android:paddingEnd="26dp" android:paddingTop="24dp" android:paddingBottom="16dp" android:background="#000000">
+  <LinearLayout android:layout_width="188dp" android:layout_height="match_parent" android:orientation="vertical" android:paddingEnd="18dp">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="40dp" android:background="@drawable/bg_search_box" android:orientation="horizontal" android:gravity="center_vertical" android:paddingStart="14dp" android:paddingEnd="12dp">
+      <EditText android:id="@+id/inputSearch" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:background="@null" android:hint="Search" android:textColorHint="#5A6375" android:textColor="#FFFFFF" android:textSize="12sp" android:singleLine="true" android:imeOptions="actionSearch" />
+      <ImageView android:layout_width="16dp" android:layout_height="16dp" android:src="@drawable/ic_nav_search" android:tint="#8E96A4" android:contentDescription="Search" />
     </LinearLayout>
-
-    <!-- RIGHT RESULTS COLUMN -->
-    <LinearLayout
-        android:layout_width="0dp"
-        android:layout_height="match_parent"
-        android:layout_weight="1"
-        android:orientation="vertical"
-        android:paddingStart="10dp">
-
-        <TextView
-            android:id="@+id/tvSearchHeader"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Search Results"
-            android:textColor="#FFFFFF"
-            android:textSize="19sp"
-            android:textStyle="bold" />
-
-        <!-- Type Filter Pills -->
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/rvSearchFilters"
-            android:layout_width="match_parent"
-            android:layout_height="34dp"
-            android:layout_marginTop="8dp" />
-
-        <!-- Featured TOP MATCH Card -->
-        <LinearLayout
-            android:id="@+id/searchTopMatchCard"
-            android:layout_width="match_parent"
-            android:layout_height="118dp"
-            android:layout_marginTop="10dp"
-            android:background="@drawable/selector_stream_card"
-            android:orientation="horizontal"
-            android:padding="10dp"
-            android:gravity="center_vertical"
-            android:focusable="true"
-            android:clickable="true"
-            android:visibility="gone">
-
-            <FrameLayout
-                android:layout_width="70dp"
-                android:layout_height="match_parent"
-                android:background="#080A0F"
-                android:clipToOutline="true">
-
-                <ImageView
-                    android:id="@+id/topMatchPoster"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:scaleType="centerCrop"
-                    android:contentDescription="Top Match" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="top|start"
-                    android:layout_margin="4dp"
-                    android:background="#FFFFFF"
-                    android:paddingStart="5dp"
-                    android:paddingEnd="5dp"
-                    android:paddingTop="1dp"
-                    android:paddingBottom="1dp"
-                    android:text="TOP"
-                    android:textColor="#050507"
-                    android:textSize="8sp"
-                    android:textStyle="bold" />
-            </FrameLayout>
-
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                android:layout_marginStart="14dp"
-                android:orientation="vertical"
-                android:gravity="center_vertical">
-
-            <TextView
-                android:id="@+id/topMatchTitle"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Title"
-                android:textColor="#FFFFFF"
-                android:textSize="16sp"
-                android:textStyle="bold"
-                android:maxLines="1"
-                android:ellipsize="end" />
-
-            <TextView
-                android:id="@+id/topMatchMeta"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
-                android:textColor="#FBBF24"
-                android:textSize="10.5sp"
-                android:textStyle="bold"
-                android:maxLines="1" />
-
-            <TextView
-                android:id="@+id/topMatchDesc"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:textColor="#9CA3AF"
-                android:textSize="10.5sp"
-                android:maxLines="2"
-                android:ellipsize="end" />
-        </LinearLayout>
-
-        <TextView
-            android:layout_width="34dp"
-            android:layout_height="34dp"
-            android:layout_marginStart="10dp"
-            android:gravity="center"
-            android:background="@drawable/selector_pill_primary"
-            android:text="▶"
-            android:textColor="#050507"
-            android:textSize="13sp"
-            android:textStyle="bold" />
+    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="5dp" android:gravity="center" android:text="IMDb Suggest • Cinemeta • Kitsu Anime" android:textColor="#6E7687" android:textSize="9.5sp" android:visibility="gone" />
+    <androidx.recyclerview.widget.RecyclerView android:id="@+id/rvSearchKeypad" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp" />
+    <LinearLayout android:layout_width="match_parent" android:layout_height="32dp" android:layout_marginTop="4dp" android:orientation="horizontal">
+      <TextView android:id="@+id/keySpace" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="2" android:layout_marginEnd="4dp" android:gravity="center" android:background="@drawable/selector_keycap" android:text="SPACE" android:textColor="@color/color_keycap_text" android:textSize="10.5sp" android:textStyle="bold" android:focusable="true" android:clickable="true" />
+      <TextView android:id="@+id/keyBackspace" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:layout_marginEnd="4dp" android:gravity="center" android:background="@drawable/selector_keycap" android:text="⌫" android:textColor="@color/color_keycap_text" android:textSize="13sp" android:textStyle="bold" android:focusable="true" android:clickable="true" />
+      <TextView android:id="@+id/keyClear" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:background="@drawable/selector_keycap" android:text="CLR" android:textColor="@color/color_keycap_text" android:textSize="10sp" android:textStyle="bold" android:focusable="true" android:clickable="true" />
     </LinearLayout>
-
-    <!-- Grid of remaining search results -->
-    <FrameLayout
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:layout_marginTop="10dp">
-
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/rvSearchResults"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:clipToPadding="false" />
-
-        <TextView
-            android:id="@+id/tvSearchStatus"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:text="Use D-Pad keypad or quick tags on the left"
-            android:textColor="#6E7687"
-            android:textSize="12.5sp" />
-        </FrameLayout>
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginTop="10dp" android:visibility="gone">
+      <TextView android:id="@+id/chipQuickDune" android:layout_width="wrap_content" android:layout_height="26dp" android:layout_marginEnd="6dp" android:paddingStart="10dp" android:paddingEnd="10dp" android:gravity="center" android:background="@drawable/selector_chip_pill" android:text="Dune" android:textColor="@color/color_chip_text" android:textSize="10sp" android:focusable="true" android:clickable="true" />
+      <TextView android:id="@+id/chipQuickJoJo" android:layout_width="wrap_content" android:layout_height="26dp" android:layout_marginEnd="6dp" android:paddingStart="10dp" android:paddingEnd="10dp" android:gravity="center" android:background="@drawable/selector_chip_pill" android:text="JoJo" android:textColor="@color/color_chip_text" android:textSize="10sp" android:focusable="true" android:clickable="true" />
+      <TextView android:id="@+id/chipQuickSpongebob" android:layout_width="wrap_content" android:layout_height="26dp" android:paddingStart="10dp" android:paddingEnd="10dp" android:gravity="center" android:background="@drawable/selector_chip_pill" android:text="SpongeBob" android:textColor="@color/color_chip_text" android:textSize="10sp" android:focusable="true" android:clickable="true" />
     </LinearLayout>
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginTop="6dp" android:visibility="gone">
+      <TextView android:id="@+id/chipQuickBreaking" android:layout_width="wrap_content" android:layout_height="26dp" android:layout_marginEnd="6dp" android:paddingStart="10dp" android:paddingEnd="10dp" android:gravity="center" android:background="@drawable/selector_chip_pill" android:text="Breaking Bad" android:textColor="@color/color_chip_text" android:textSize="10sp" android:focusable="true" android:clickable="true" />
+      <TextView android:id="@+id/chipQuickInterstellar" android:layout_width="wrap_content" android:layout_height="26dp" android:paddingStart="10dp" android:paddingEnd="10dp" android:gravity="center" android:background="@drawable/selector_chip_pill" android:text="Interstellar" android:textColor="@color/color_chip_text" android:textSize="10sp" android:focusable="true" android:clickable="true" />
+    </LinearLayout>
+  </LinearLayout>
+  <LinearLayout android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:orientation="vertical" android:paddingStart="10dp">
+    <TextView android:id="@+id/tvSearchHeader" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Search" android:textColor="#FFFFFF" android:textSize="14sp" android:textStyle="bold" />
+    <androidx.recyclerview.widget.RecyclerView android:id="@+id/rvSearchFilters" android:layout_width="match_parent" android:layout_height="34dp" android:layout_marginTop="8dp" />
+    <LinearLayout android:id="@+id/searchTopMatchCard" android:layout_width="match_parent" android:layout_height="118dp" android:layout_marginTop="10dp" android:background="@drawable/selector_stream_card" android:orientation="horizontal" android:padding="10dp" android:gravity="center_vertical" android:focusable="true" android:clickable="true" android:visibility="gone">
+      <FrameLayout android:layout_width="70dp" android:layout_height="match_parent" android:background="#080A0F" android:clipToOutline="true">
+        <ImageView android:id="@+id/topMatchPoster" android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="centerCrop" android:contentDescription="Top Match" />
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="top|start" android:layout_margin="4dp" android:background="#FFFFFF" android:paddingStart="5dp" android:paddingEnd="5dp" android:paddingTop="1dp" android:paddingBottom="1dp" android:text="TOP" android:textColor="#050507" android:textSize="8sp" android:textStyle="bold" />
+      </FrameLayout>
+      <LinearLayout android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:layout_marginStart="14dp" android:orientation="vertical" android:gravity="center_vertical">
+        <TextView android:id="@+id/topMatchTitle" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Title" android:textColor="#FFFFFF" android:textSize="16sp" android:textStyle="bold" android:maxLines="1" android:ellipsize="end" />
+        <TextView android:id="@+id/topMatchMeta" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="2dp" android:textColor="#DDDDDD" android:textSize="10.5sp" android:textStyle="bold" android:maxLines="1" />
+        <TextView android:id="@+id/topMatchDesc" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:textColor="#9CA3AF" android:textSize="10.5sp" android:maxLines="2" android:ellipsize="end" />
+      </LinearLayout>
+      <TextView android:layout_width="34dp" android:layout_height="34dp" android:layout_marginStart="10dp" android:gravity="center" android:background="@drawable/selector_pill_primary" android:text="▶" android:textColor="#050507" android:textSize="13sp" android:textStyle="bold" />
+    </LinearLayout>
+    <FrameLayout android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:layout_marginTop="10dp">
+      <androidx.recyclerview.widget.RecyclerView android:id="@+id/rvSearchResults" android:layout_width="match_parent" android:layout_height="match_parent" android:clipToPadding="false" />
+      <TextView android:id="@+id/tvSearchStatus" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="center" android:text="Use D-Pad keypad or quick tags on the left" android:textColor="#6E7687" android:textSize="12.5sp" />
+    </FrameLayout>
+  </LinearLayout>
 </LinearLayout>

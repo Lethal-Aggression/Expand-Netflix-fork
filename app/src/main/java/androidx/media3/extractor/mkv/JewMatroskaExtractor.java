@@ -81,14 +81,14 @@ import org.checkerframework.checker.nullness.qual.RequiresNonNull;
 
 /** Extracts data from the Matroska and WebM container formats. */
 @UnstableApi
-public class MatroskaExtractor implements Extractor {
+public class JewMatroskaExtractor implements Extractor {
 
   /**
-   * Creates a factory for {@link MatroskaExtractor} instances with the provided {@link
+   * Creates a factory for {@link JewMatroskaExtractor} instances with the provided {@link
    * SubtitleParser.Factory}.
    */
   public static ExtractorsFactory newFactory(SubtitleParser.Factory subtitleParserFactory) {
-    return () -> new Extractor[] {new MatroskaExtractor(subtitleParserFactory)};
+    return () -> new Extractor[] {new JewMatroskaExtractor(subtitleParserFactory)};
   }
 
   /**
@@ -126,10 +126,10 @@ public class MatroskaExtractor implements Extractor {
   public static final ExtractorsFactory FACTORY =
       () ->
           new Extractor[] {
-            new MatroskaExtractor(SubtitleParser.Factory.UNSUPPORTED, FLAG_EMIT_RAW_SUBTITLE_DATA)
+            new JewMatroskaExtractor(SubtitleParser.Factory.UNSUPPORTED, FLAG_EMIT_RAW_SUBTITLE_DATA)
           };
 
-  private static final String TAG = "MatroskaExtractor";
+  private static final String TAG = "JewMatroskaExtractor";
 
   private static final int UNSET_ENTRY_ID = -1;
 
@@ -494,18 +494,18 @@ public class MatroskaExtractor implements Extractor {
   private @MonotonicNonNull ExtractorOutput extractorOutput;
 
   /**
-   * @deprecated Use {@link #MatroskaExtractor(SubtitleParser.Factory)} instead.
+   * @deprecated Use {@link #JewMatroskaExtractor(SubtitleParser.Factory)} instead.
    */
   @Deprecated
-  public MatroskaExtractor() {
+  public JewMatroskaExtractor() {
     this(new DefaultEbmlReader(), FLAG_EMIT_RAW_SUBTITLE_DATA, SubtitleParser.Factory.UNSUPPORTED);
   }
 
   /**
-   * @deprecated Use {@link #MatroskaExtractor(SubtitleParser.Factory, int)} instead.
+   * @deprecated Use {@link #JewMatroskaExtractor(SubtitleParser.Factory, int)} instead.
    */
   @Deprecated
-  public MatroskaExtractor(@Flags int flags) {
+  public JewMatroskaExtractor(@Flags int flags) {
     this(
         new DefaultEbmlReader(),
         flags | FLAG_EMIT_RAW_SUBTITLE_DATA,
@@ -518,7 +518,7 @@ public class MatroskaExtractor implements Extractor {
    * @param subtitleParserFactory The {@link SubtitleParser.Factory} for parsing subtitles during
    *     extraction.
    */
-  public MatroskaExtractor(SubtitleParser.Factory subtitleParserFactory) {
+  public JewMatroskaExtractor(SubtitleParser.Factory subtitleParserFactory) {
     this(new DefaultEbmlReader(), /* flags= */ 0, subtitleParserFactory);
   }
 
@@ -529,11 +529,11 @@ public class MatroskaExtractor implements Extractor {
    *     extraction.
    * @param flags Flags that control the extractor's behavior.
    */
-  public MatroskaExtractor(SubtitleParser.Factory subtitleParserFactory, @Flags int flags) {
+  public JewMatroskaExtractor(SubtitleParser.Factory subtitleParserFactory, @Flags int flags) {
     this(new DefaultEbmlReader(), flags, subtitleParserFactory);
   }
 
-  /* package */ MatroskaExtractor(
+  /* package */ JewMatroskaExtractor(
       EbmlReader reader, @Flags int flags, SubtitleParser.Factory subtitleParserFactory) {
     this.reader = reader;
     this.reader.init(new InnerEbmlProcessor());
@@ -2036,48 +2036,48 @@ public class MatroskaExtractor implements Extractor {
     checkStateNotNull(extractorOutput);
   }
 
-  /** Passes events through to the outer {@link MatroskaExtractor}. */
+  /** Passes events through to the outer {@link JewMatroskaExtractor}. */
   private final class InnerEbmlProcessor implements EbmlProcessor {
 
     @Override
     public @ElementType int getElementType(int id) {
-      return MatroskaExtractor.this.getElementType(id);
+      return JewMatroskaExtractor.this.getElementType(id);
     }
 
     @Override
     public boolean isLevel1Element(int id) {
-      return MatroskaExtractor.this.isLevel1Element(id);
+      return JewMatroskaExtractor.this.isLevel1Element(id);
     }
 
     @Override
     public void startMasterElement(int id, long contentPosition, long contentSize)
         throws ParserException {
-      MatroskaExtractor.this.startMasterElement(id, contentPosition, contentSize);
+      JewMatroskaExtractor.this.startMasterElement(id, contentPosition, contentSize);
     }
 
     @Override
     public void endMasterElement(int id) throws ParserException {
-      MatroskaExtractor.this.endMasterElement(id);
+      JewMatroskaExtractor.this.endMasterElement(id);
     }
 
     @Override
     public void integerElement(int id, long value) throws ParserException {
-      MatroskaExtractor.this.integerElement(id, value);
+      JewMatroskaExtractor.this.integerElement(id, value);
     }
 
     @Override
     public void floatElement(int id, double value) throws ParserException {
-      MatroskaExtractor.this.floatElement(id, value);
+      JewMatroskaExtractor.this.floatElement(id, value);
     }
 
     @Override
     public void stringElement(int id, String value) throws ParserException {
-      MatroskaExtractor.this.stringElement(id, value);
+      JewMatroskaExtractor.this.stringElement(id, value);
     }
 
     @Override
     public void binaryElement(int id, int contentsSize, ExtractorInput input) throws IOException {
-      MatroskaExtractor.this.binaryElement(id, contentsSize, input);
+      JewMatroskaExtractor.this.binaryElement(id, contentsSize, input);
     }
   }
 
@@ -2663,7 +2663,7 @@ public class MatroskaExtractor implements Extractor {
     /**
      * Checks that the track has an output.
      *
-     * <p>It is unfortunately not possible to mark {@link MatroskaExtractor#tracks} as only
+     * <p>It is unfortunately not possible to mark {@link JewMatroskaExtractor#tracks} as only
      * containing tracks with output with the nullness checker. This method is used to check that
      * fact at runtime.
      */

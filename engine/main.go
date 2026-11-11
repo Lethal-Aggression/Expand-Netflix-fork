@@ -2,11 +2,11 @@ package main
 
 import (
 	"context"
-	"crypto/tls"
-	"encoding/hex"
+	"crypto/subtle"
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io"
 	"log"
 	"mime"
 	"net"
@@ -15,6 +15,7 @@ import (
 	"os/signal"
 	"path/filepath"
 	"runtime/debug"
+ "regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -23,10 +24,8 @@ import (
 	"time"
 
 	anacrolixLog "github.com/anacrolix/log"
-	"github.com/anacrolix/missinggo/v2/filecache"
 	"github.com/anacrolix/torrent"
 	"github.com/anacrolix/torrent/metainfo"
-	"github.com/anacrolix/torrent/storage"
 	"golang.org/x/time/rate"
 )
 
@@ -36,10 +35,7 @@ var fastMetaClient = &http.Client{
 		MaxIdleConns:        20,
 		MaxIdleConnsPerHost: 10,
 		IdleConnTimeout:     30 * time.Second,
-		DisableCompression: false,
-		TLSClientConfig: &tls.Config{
-			InsecureSkipVerify: true, // Bypass missing system root CA bundles on Android untrusted app sandbox
-		},
+		DisableCompression:  false,
 		DialContext: (&net.Dialer{
 			Timeout:   3 * time.Second,
 			KeepAlive: 30 * time.Second,
@@ -86,7 +82,7 @@ func fetchFastMetainfo(ctx context.Context, h metainfo.Hash, t *torrent.Torrent)
 			defer resp.Body.Close()
 
 			if resp.StatusCode == http.StatusOK {
-				mi, err := metainfo.Load(resp.Body)
+				mi, err := metainfo.Load(io.LimitReader(resp.Body, 8<<20))
 				if err != nil {
 					log.Printf("[JewEngine] FastMeta decode failed for %s: %v", endpoint, err)
 					return
@@ -149,9 +145,13 @@ type SpeedTracker struct {
 	speed     float64
 }
 
+var rollingCapacity atomic.Int64
+
 type Engine struct {
+	prewarmEpoch   uint64
+	currentSession string
 	client         *torrent.Client
-	cache          *filecache.Cache
+	cache          *diskCache
 	cacheDir       string
 	maxCacheBytes  atomic.Int64
 	mu             sync.Mutex
@@ -166,16 +166,20 @@ type Engine struct {
 func main() {
 	port := flag.Int("port", 8811, "Port for JewEngine HTTP micro-server")
 	cacheDir := flag.String("cacheDir", "./torrent_cache", "Directory for bounded rolling piece storage")
+	token := flag.String("token", "", "Per-launch local client credential")
 	maxCacheMB := flag.Int("maxCacheMB", 400, "Rolling FIFO disk cache limit in MB")
 	flag.Parse()
+	if len(*token) < 32 {
+		log.Fatal("A local authentication token is required")
+	}
 
 	// Keep Go memory footprint compact for 32-bit 2GB Android TV devices
 	debug.SetMemoryLimit(160 << 20)
 	debug.SetGCPercent(50)
 
 	capMB := *maxCacheMB
-	if capMB < 200 {
-		capMB = 200
+	if capMB < 160 {
+		capMB = 160
 	} else if capMB > 800 {
 		capMB = 800
 	}
@@ -203,23 +207,24 @@ func main() {
 		log.Fatalf("[JewEngine] Failed to create cache directory: %v", err)
 	}
 
-	fc, err := filecache.NewCache(*cacheDir)
+	for _, name := range []string{"completed", "incompleted"} {
+		_ = os.RemoveAll(filepath.Join(*cacheDir, name))
+	}
+	fc, err := newDiskCache(*cacheDir, capBytes)
 	if err != nil {
 		log.Fatalf("[JewEngine] Failed to initialize filecache: %v", err)
 	}
 	// CRITICAL: Disable filecache auto-trimming (-1) so incomplete chunk files are NEVER deleted mid-download!
 	// Rolling eviction is handled exclusively by evictPastWatchedPieces on completed pieces behind playback head.
-	fc.SetCapacity(-1)
+	fc.SetCapacity(capBytes)
 
 	log.Printf("[JewEngine] Sovereign Engine v2.0 starting on 127.0.0.1:%d | Rolling FIFO Cache Cap: %d MB", *port, capMB)
 
 	cfg := torrent.NewDefaultClientConfig()
-	cfg.DefaultStorage = storage.NewResourcePiecesOpts(fc.AsResourceProvider(), storage.ResourcePiecesOpts{
-		LeaveIncompleteChunks: false,
-	})
+	cfg.DefaultStorage = fc
 	cfg.DisableIPv6 = true
 	cfg.NoDefaultPortForwarding = false // Enable UPnP / NAT-PMP router hole punching
-	cfg.DisableUTP = false             // Enable uTP for peer-to-peer UDP hole punching and NAT traversal
+	cfg.DisableUTP = false              // Enable uTP for peer-to-peer UDP hole punching and NAT traversal
 	cfg.DisableTCP = false
 	cfg.HeaderObfuscationPolicy.Preferred = true
 	cfg.NoDHT = false
@@ -253,8 +258,11 @@ func main() {
 		speedTrackers:  make(map[string]*SpeedTracker),
 	}
 	eng.maxCacheBytes.Store(capBytes)
+	rollingCapacity.Store(capBytes)
 
 	mux := http.NewServeMux()
+	mux.HandleFunc("/claim", eng.handleClaim)
+	mux.HandleFunc("/release", eng.handleRelease)
 	mux.HandleFunc("/health", eng.handleHealth)
 	mux.HandleFunc("/config", eng.handleConfig)
 	mux.HandleFunc("/prewarm", eng.handlePrewarm)
@@ -266,7 +274,7 @@ func main() {
 
 	server := &http.Server{
 		Addr:         fmt.Sprintf("127.0.0.1:%d", *port),
-		Handler:      corsMiddleware(mux),
+		Handler:      authenticated(*token, mux),
 		ReadTimeout:  15 * time.Second,
 		WriteTimeout: 0, // Unlimited streaming duration for 4K cinema
 		IdleTimeout:  60 * time.Second,
@@ -287,14 +295,23 @@ func main() {
 	log.Println("[JewEngine] Shutdown complete.")
 }
 
-func corsMiddleware(next http.Handler) http.Handler {
+func authenticated(token string, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "*")
-		if r.Method == http.MethodOptions {
-			w.WriteHeader(http.StatusOK)
+		supplied := r.Header.Get("X-Engine-Token")
+		if supplied == "" && r.URL.Path == "/stream" {
+			supplied = r.URL.Query().Get("token")
+		}
+		if subtle.ConstantTimeCompare([]byte(supplied), []byte(token)) != 1 {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
+		}
+		switch r.URL.Path {
+		case "/claim", "/release", "/wipe", "/drop", "/shutdown", "/config", "/prewarm":
+			if r.Method != http.MethodPost {
+				w.Header().Set("Allow", "POST")
+				http.Error(w, "POST required", http.StatusMethodNotAllowed)
+				return
+			}
 		}
 		next.ServeHTTP(w, r)
 	})
@@ -312,7 +329,7 @@ func (e *Engine) handleHealth(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]interface{}{
 		"status":          "ok",
 		"engine":          "jewflix-engine",
-		"version":         "2.0",
+		"version":         "3.0",
 		"cache_bytes":     info.Filled,
 		"cache_cap_bytes": e.maxCacheBytes.Load(),
 		"cache_items":     info.NumItems,
@@ -323,13 +340,15 @@ func (e *Engine) handleConfig(w http.ResponseWriter, r *http.Request) {
 	mbStr := strings.TrimSpace(r.URL.Query().Get("maxCacheMB"))
 	if mbStr != "" {
 		if mb, err := strconv.Atoi(mbStr); err == nil {
-			if mb < 200 {
-				mb = 200
+			if mb < 160 {
+				mb = 160
 			} else if mb > 800 {
 				mb = 800
 			}
 			capBytes := int64(mb) * 1024 * 1024
 			e.maxCacheBytes.Store(capBytes)
+			e.cache.SetCapacity(capBytes)
+			rollingCapacity.Store(capBytes)
 			log.Printf("[JewEngine] Updated rolling FIFO cache limit -> %d MB", mb)
 		}
 	}
@@ -341,6 +360,45 @@ func (e *Engine) handleConfig(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func (e *Engine) handleClaim(w http.ResponseWriter, r *http.Request) {
+	sid := r.URL.Query().Get("session")
+	if sid == "" {
+		http.Error(w, "Missing session", 400)
+		return
+	}
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	if e.currentSession != sid {
+		if e.prewarmCancel != nil {
+			e.prewarmCancel()
+			e.prewarmCancel = nil
+		}
+		e.prewarmEpoch++
+		for hash, t := range e.activeTorrents {
+			t.Drop()
+			e.cache.dropHash(hash)
+		}
+		e.activeTorrents = make(map[string]*torrent.Torrent)
+		e.currentSession = sid
+	}
+	writeJSON(w, 200, map[string]string{"status": "claimed"})
+}
+func (e *Engine) handleRelease(w http.ResponseWriter, r *http.Request) {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	sid := r.URL.Query().Get("session")
+	if sid == "" || sid != e.currentSession {
+		writeJSON(w, 200, map[string]string{"status": "stale_session"})
+		return
+	}
+	for hash, t := range e.activeTorrents {
+		t.Drop()
+		e.cache.dropHash(hash)
+	}
+	e.activeTorrents = make(map[string]*torrent.Torrent)
+	e.currentSession = ""
+	writeJSON(w, 200, map[string]string{"status": "released"})
+}
 func (e *Engine) handleShutdown(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]string{"status": "shutting_down"})
 	go func() {
@@ -368,20 +426,13 @@ func (e *Engine) handleWipe(w http.ResponseWriter, r *http.Request) {
 
 	// Remove every cached entry via filecache API so filled/items/policy remain 100% coherent
 	var keys []string
-	e.cache.WalkItems(func(item filecache.ItemInfo) {
+	e.cache.WalkItems(func(item diskItemInfo) {
 		keys = append(keys, string(item.Path))
 	})
 	for _, k := range keys {
 		_ = e.cache.Remove(k)
 	}
 	e.cache.TrimToCapacity()
-
-	// Remove any empty stray subdirectories without deleting root
-	if entries, err := os.ReadDir(e.cacheDir); err == nil {
-		for _, ent := range entries {
-			_ = os.RemoveAll(filepath.Join(e.cacheDir, ent.Name()))
-		}
-	}
 
 	info := e.cache.Info()
 	log.Printf("[JewEngine] Wipe complete (items=%d, bytes=%d)", info.NumItems, info.Filled)
@@ -405,6 +456,7 @@ func (e *Engine) handleDrop(w http.ResponseWriter, r *http.Request) {
 	t, ok := e.client.Torrent(h)
 	if ok {
 		t.Drop()
+		e.cache.dropHash(hashStr)
 		e.mu.Lock()
 		delete(e.activeTorrents, hashStr)
 		delete(e.speedTrackers, hashStr)
@@ -456,6 +508,15 @@ func selectTargetFile(files []*torrent.File, idxStr string) *torrent.File {
 	if len(files) == 0 {
 		return nil
 	}
+ if strings.HasPrefix(idxStr, "episode:") {
+  parts := strings.Split(idxStr, ":")
+  if len(parts)!=3 { return nil }
+  season,err := strconv.Atoi(parts[1]); if err!=nil {return nil}
+  episode,err := strconv.Atoi(parts[2]); if err!=nil {return nil}
+  pattern := regexp.MustCompile(fmt.Sprintf(`(?i)(?:s0*%de0*%d(?:[^0-9]|$)|(?:^|[^0-9])0*%dx0*%d(?:[^0-9]|$))`,season,episode,season,episode))
+  for _, f := range files { if pattern.MatchString(f.DisplayPath()) { return f } }
+  return nil
+ }
 	if idxStr != "" {
 		if idx, err := strconv.Atoi(idxStr); err == nil && idx >= 0 && idx < len(files) {
 			return files[idx]
@@ -551,18 +612,22 @@ func applySlidingWindowPriority(t *torrent.Torrent, target *torrent.File, curByt
 	// - Urgent playback buffer: curPiece .. curPiece + 8 (~32 MB) -> PriorityNow
 	// - Lookahead buffer: curPiece + 8 .. curPiece + 28 (~80 MB) -> PriorityHigh
 	// TOTAL ACTIVE BUFFER AHEAD: ~112 MB (28 pieces max, ~45-60s of 4K)
-	urgentEnd := curPiece + 8
+	urgentEnd := curPiece + 4
 	if urgentEnd > end {
 		urgentEnd = end
 	}
-	lookaheadEnd := curPiece + 28
+	ahead, behind := windowCounts(pieceLen, rollingCapacity.Load())
+	lookaheadEnd := curPiece + ahead
+	if urgentEnd > lookaheadEnd {
+		urgentEnd = lookaheadEnd
+	}
 	if lookaheadEnd > end {
 		lookaheadEnd = end
 	}
 
 	// 1. Deprioritize and CANCEL all trailing pieces behind playback head (< curPiece - 4)
 	// (Preserve only container header pieces begin .. begin+1 for seeking)
-	pastLimit := curPiece - 4
+	pastLimit := curPiece - behind
 	if pastLimit > begin+2 {
 		for p := begin + 2; p < pastLimit; p++ {
 			t.Piece(p).SetPriority(torrent.PiecePriorityNone)
@@ -603,81 +668,39 @@ func applySlidingWindowPriority(t *torrent.Torrent, target *torrent.File, curByt
 	}
 }
 
-func (e *Engine) evictPastWatchedPieces(t *torrent.Torrent, target *torrent.File, curBytePos int64) {
-	if t == nil || target == nil || t.Info() == nil {
+func (e *Engine) evictPastWatchedPieces(t *torrent.Torrent, target *torrent.File, pos int64) {
+	if t.Info() == nil {
 		return
 	}
-	info := t.Info()
-	pieceLen := info.PieceLength
-	if pieceLen <= 0 || len(info.Pieces) == 0 {
+	pieceLen := t.Info().PieceLength
+	if pieceLen <= 0 {
 		return
 	}
-
-	begin := target.BeginPieceIndex()
-	fileOffset := target.Offset()
-	curPiece := int((fileOffset + curBytePos) / pieceLen)
-
-	// Immediate sparse chunk hole punching:
-	// As soon as playback advances past container header (begin + 2),
-	// delete any piece more than 4 pieces behind (~16 MB / 30-40s ago) immediately.
-	safeEvictEnd := curPiece - 4
-	if safeEvictEnd > begin+2 {
-		for p := begin + 2; p < safeEvictEnd; p++ {
-			start := p * 20
-			if start+20 > len(info.Pieces) {
-				break
-			}
-			pieceHash := hex.EncodeToString(info.Pieces[start : start+20])
-			fullPath := filepath.Join(e.cacheDir, "completed", pieceHash)
-			relPath := filepath.ToSlash(filepath.Join("completed", pieceHash))
-			incompleteDir := filepath.Join(e.cacheDir, "incompleted", pieceHash)
-
-			// Drop piece in torrent client
-			t.Piece(p).SetPriority(torrent.PiecePriorityNone)
-			t.CancelPieces(p, p+1)
-
-			// Hole-punch remove from disk & filecache index
-			if fi, err := os.Stat(fullPath); err == nil && !fi.IsDir() {
-				size := fi.Size()
-				_ = e.cache.Remove(relPath)
-				_ = os.Remove(fullPath)
-				log.Printf("[JewEngine] Hole-punched watched piece %d (%s) freeing %.1f MB", p, pieceHash[:8], float64(size)/(1024*1024))
-			} else {
-				_ = e.cache.Remove(relPath)
-			}
-			_ = os.RemoveAll(incompleteDir)
-		}
+	cur := int((target.Offset() + pos) / pieceLen)
+	ahead, behind := windowCounts(pieceLen, e.maxCacheBytes.Load())
+	removed := e.cache.evict(t.InfoHash().HexString(), target.BeginPieceIndex(), target.EndPieceIndex(), cur, ahead, behind)
+	for _, index := range removed {
+		t.Piece(index).UpdateCompletion()
 	}
-
-	// Emergency flash protection: if cache still exceeds maxCacheBytes,
-	// prune any completed pieces outside the active playing window
-	cacheInfo := e.cache.Info()
-	capBytes := e.maxCacheBytes.Load()
-	if capBytes > 0 && cacheInfo.Filled > capBytes {
-		lookaheadEnd := curPiece + 28
-		log.Printf("[JewEngine] Flash safety trip: filled %.1f MB > cap %.1f MB. Purging outer pieces...",
-			float64(cacheInfo.Filled)/(1024*1024), float64(capBytes)/(1024*1024))
-		for p := begin + 2; p < target.EndPieceIndex()-2; p++ {
-			if p >= curPiece && p < lookaheadEnd {
-				continue // Active window protected
-			}
-			start := p * 20
-			if start+20 > len(info.Pieces) {
-				break
-			}
-			pieceHash := hex.EncodeToString(info.Pieces[start : start+20])
-			relPath := filepath.ToSlash(filepath.Join("completed", pieceHash))
-			fullPath := filepath.Join(e.cacheDir, "completed", pieceHash)
-			_ = e.cache.Remove(relPath)
-			_ = os.Remove(fullPath)
-			_ = os.RemoveAll(filepath.Join(e.cacheDir, "incompleted", pieceHash))
-			t.Piece(p).SetPriority(torrent.PiecePriorityNone)
-			t.CancelPieces(p, p+1)
-		}
+}
+func windowCounts(pieceLen, capBytes int64) (ahead, behind int) {
+	if pieceLen <= 0 {
+		return 1, 1
 	}
+	slots := int(capBytes / pieceLen)
+	behind = 2
+	ahead = slots/2 - 6
+	if ahead < 2 {
+		ahead = 2
+	}
+	if ahead > 28 {
+		ahead = 28
+	}
+	return
 }
 
 type continuousSlidingReader struct {
+	ctx         context.Context
 	reader      torrent.Reader
 	t           *torrent.Torrent
 	target      *torrent.File
@@ -685,9 +708,9 @@ type continuousSlidingReader struct {
 	lastPrioPos atomic.Int64
 }
 
-func newContinuousSlidingReader(r torrent.Reader, t *torrent.Torrent, target *torrent.File, initialPos int64) *continuousSlidingReader {
+func newContinuousSlidingReader(ctx context.Context, r torrent.Reader, t *torrent.Torrent, target *torrent.File, initialPos int64) *continuousSlidingReader {
 	csr := &continuousSlidingReader{
-		reader: r,
+		reader: r, ctx: ctx,
 		t:      t,
 		target: target,
 	}
@@ -697,7 +720,7 @@ func newContinuousSlidingReader(r torrent.Reader, t *torrent.Torrent, target *to
 }
 
 func (r *continuousSlidingReader) Read(p []byte) (n int, err error) {
-	n, err = r.reader.Read(p)
+	n, err = r.reader.ReadContext(r.ctx, p)
 	if n > 0 {
 		newPos := r.curPos.Add(int64(n))
 		last := r.lastPrioPos.Load()
@@ -743,6 +766,13 @@ func (e *Engine) handlePrewarm(w http.ResponseWriter, r *http.Request) {
 	}
 
 	e.mu.Lock()
+	if e.currentSession != "" {
+		e.mu.Unlock()
+		writeJSON(w, 200, map[string]string{"status": "skipped_playback"})
+		return
+	}
+	e.prewarmEpoch++
+	epoch := e.prewarmEpoch
 	if e.prewarmCancel != nil {
 		e.prewarmCancel()
 		e.prewarmCancel = nil
@@ -750,6 +780,7 @@ func (e *Engine) handlePrewarm(w http.ResponseWriter, r *http.Request) {
 	for prevHash, prevT := range e.activeTorrents {
 		if prevHash != hashStr {
 			prevT.Drop()
+			e.cache.dropHash(prevHash)
 			delete(e.activeTorrents, prevHash)
 			delete(e.speedTrackers, prevHash)
 		}
@@ -768,6 +799,17 @@ func (e *Engine) handlePrewarm(w http.ResponseWriter, r *http.Request) {
 
 	go func() {
 		defer cancel()
+		defer func() {
+			e.mu.Lock()
+			defer e.mu.Unlock()
+			if e.prewarmEpoch == epoch && e.activeStreams.Load() == 0 && e.currentSession == "" {
+				if old := e.activeTorrents[hashStr]; old == t {
+					t.Drop()
+					delete(e.activeTorrents, hashStr)
+					e.cache.dropHash(hashStr)
+				}
+			}
+		}()
 		go fetchFastMetainfo(ctx, h, t)
 		select {
 		case <-t.GotInfo():
@@ -778,6 +820,16 @@ func (e *Engine) handlePrewarm(w http.ResponseWriter, r *http.Request) {
 				t.DisallowDataUpload()
 				warmContainerBoundaries(t, target)
 				applySlidingWindowPriority(t, target, 0)
+				<-ctx.Done()
+				<-ctx.Done()
+				e.mu.Lock()
+				if e.activeStreams.Load() == 0 && e.prewarmHash == hashStr && e.activeTorrents[hashStr] == t {
+					t.Drop()
+					delete(e.activeTorrents, hashStr)
+					e.cache.dropHash(hashStr)
+					e.prewarmHash = ""
+				}
+				e.mu.Unlock()
 			}
 		case <-ctx.Done():
 		}
@@ -961,6 +1013,7 @@ func (e *Engine) handleStream(w http.ResponseWriter, r *http.Request) {
 	defer e.activeStreams.Add(-1)
 
 	e.mu.Lock()
+	e.currentSession = r.URL.Query().Get("session")
 	if e.prewarmCancel != nil {
 		e.prewarmCancel()
 		e.prewarmCancel = nil
@@ -969,6 +1022,7 @@ func (e *Engine) handleStream(w http.ResponseWriter, r *http.Request) {
 		if prevHash != hashStr {
 			log.Printf("[JewEngine] Switching torrent: dropping %s", prevHash)
 			prevT.Drop()
+			e.cache.dropHash(prevHash)
 			delete(e.activeTorrents, prevHash)
 			delete(e.speedTrackers, prevHash)
 		}
@@ -1029,15 +1083,15 @@ func (e *Engine) handleStream(w http.ResponseWriter, r *http.Request) {
 	defer rawReader.Close()
 
 	// CRITICAL FOR ZERO-STALL STREAMING: stream chunks immediately without waiting for full piece hash verification
-	rawReader.SetResponsive()
+	// Keep piece verification enabled before decoding untrusted peer data.
 
 	if isProbe {
 		rawReader.SetReadahead(4 * 1024 * 1024)
 	} else {
-		rawReader.SetReadahead(48 * 1024 * 1024) // 48 MB readahead (~12 pieces ahead) for snappy 4K flow
+		rawReader.SetReadahead(min(int64(24*1024*1024), e.maxCacheBytes.Load()/8)) // 48 MB readahead (~12 pieces ahead) for snappy 4K flow
 	}
 
-	csr := newContinuousSlidingReader(rawReader, t, targetFile, br.start)
+	csr := newContinuousSlidingReader(ctx, rawReader, t, targetFile, br.start)
 	applySlidingWindowPriority(t, targetFile, br.start)
 
 	if !isProbe {

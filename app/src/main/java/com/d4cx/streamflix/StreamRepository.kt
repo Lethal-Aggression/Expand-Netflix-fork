@@ -21,6 +21,7 @@ object StreamRepository {
         episode: Int? = null,
         context: Context? = null
     ): List<StreamItem> {
+        if(id.startsWith("arabic:"))return listOf(StreamItem(name="StarDima",title="Arabic provider",url="arabic-page:"+id.removePrefix("arabic:"),quality="Arabic",hasArabicHint=true,isDirect=true))
         val streamType = if (type.equals("anime", true)) "series" else type
         val queryId = if (streamType == "series") {
             if (id.startsWith("kitsu:")) {
@@ -39,7 +40,7 @@ object StreamRepository {
         val streams = mutableListOf<StreamItem>()
 
         // 0. Sovereign Arabic Dub Archive for SpongeBob, Gumball, OTGW, Regular Show, Adventure Time, Courage
-        val arabicStreams = resolveArabicDubStreams(id, season, episode, type)
+        val arabicStreams = emptyList<StreamItem>()
         streams.addAll(arabicStreams)
 
         // 1. Primary configured Addon / Torrentio (supports custom URL or Real-Debrid config)
@@ -55,7 +56,7 @@ object StreamRepository {
         }
 
         // 2. Fallback to Torrentio public default if custom addon yielded zero streams
-        if (streams.isEmpty() && baseUrl != SettingsManager.DEFAULT_ADDON_URL) {
+        if (jsonStr == null && baseUrl != SettingsManager.DEFAULT_ADDON_URL) {
             httpGet("${SettingsManager.DEFAULT_ADDON_URL}/stream/$streamType/$queryId.json", 4500)?.let {
                 parseStreamJson(it, streams)
             }
@@ -68,7 +69,7 @@ object StreamRepository {
             }
         }
 
-        return streams.sortedByDescending { it.streamScore() }
+        return streams.distinctBy { it.url ?: "${it.infoHash}:${it.fileIdx}" }.sortedByDescending { it.streamScore() + SourceHealth.score(context,it) }
     }
 
     private fun parseStreamJson(jsonStr: String, outList: MutableList<StreamItem>) {
@@ -404,11 +405,12 @@ object StreamRepository {
         return baseQuality + seederScore + sizeScore + formatBonus + remuxPenalty
     }
 
-    fun resolvePlayableUrl(stream: StreamItem): String {
+    fun resolvePlayableUrl(stream: StreamItem,season:Int?=null,episode:Int?=null): String {
+        if (stream.url?.startsWith("arabic-page:")==true) return ArabicBroadcasts.resolveAny(listOf(stream.url.removePrefix("arabic-page:"))+stream.sources)
         if (!stream.url.isNullOrEmpty()) return stream.url
         val hash = stream.infoHash ?: return ""
-        val idx = stream.fileIdx ?: 0
-        val sb = StringBuilder("http://127.0.0.1:${JewEngineManager.ENGINE_PORT}/stream?hash=$hash&idx=$idx")
+        val idx = stream.fileIdx?.toString() ?: if(season!=null&&episode!=null) "episode:$season:$episode" else ""
+        val sb = StringBuilder("http://127.0.0.1:${JewEngineManager.ENGINE_PORT}/stream?hash=$hash&idx=$idx" + JewEngineManager.streamQuery())
         if (stream.sources.isNotEmpty()) {
             val cleanTrackers = stream.sources.mapNotNull { src ->
                 val clean = src.removePrefix("tracker:").trim()
@@ -429,6 +431,7 @@ object StreamRepository {
         return try {
             val url = URL(urlString)
             conn = url.openConnection() as HttpURLConnection
+            JewEngineManager.authorize(conn)
             conn.connectTimeout = timeoutMs
             conn.readTimeout = timeoutMs
             conn.instanceFollowRedirects = true

@@ -68,8 +68,8 @@ class ContinueWatchingAdapter(
 
         holder.view.setOnFocusChangeListener { v, hasFocus ->
             v.animate()
-                .scaleX(if (hasFocus) 1.05f else 1f)
-                .scaleY(if (hasFocus) 1.05f else 1f)
+                .scaleX(if (hasFocus) 1.015f else 1f)
+                .scaleY(if (hasFocus) 1.015f else 1f)
                 .translationZ(if (hasFocus) 10f else 0f)
                 .setDuration(130)
                 .setInterpolator(interpolator)
@@ -129,7 +129,7 @@ class ShelfPosterAdapter(
         holder.sub.text = if (item.year.isNotEmpty()) "${item.year} • $typeText" else typeText
 
         if (!item.imdbRating.isNullOrEmpty()) {
-            holder.rating.visibility = View.VISIBLE
+            holder.rating.visibility = View.GONE
             holder.rating.text = "★ ${item.imdbRating}"
         } else {
             holder.rating.visibility = View.GONE
@@ -142,8 +142,8 @@ class ShelfPosterAdapter(
                 onFocused?.invoke(item, holder.bindingAdapterPosition.coerceAtLeast(0))
             }
             v.animate()
-                .scaleX(if (hasFocus) 1.06f else 1f)
-                .scaleY(if (hasFocus) 1.06f else 1f)
+                .scaleX(if (hasFocus) 1.015f else 1f)
+                .scaleY(if (hasFocus) 1.015f else 1f)
                 .translationZ(if (hasFocus) 10f else 0f)
                 .setDuration(130)
                 .setInterpolator(interpolator)
@@ -202,8 +202,8 @@ class CatalogAdapter(
 
         holder.view.setOnFocusChangeListener { v, hasFocus ->
             v.animate()
-                .scaleX(if (hasFocus) 1.06f else 1f)
-                .scaleY(if (hasFocus) 1.06f else 1f)
+                .scaleX(if (hasFocus) 1.015f else 1f)
+                .scaleY(if (hasFocus) 1.015f else 1f)
                 .translationZ(if (hasFocus) 10f else 0f)
                 .setDuration(130)
                 .setInterpolator(interpolator)
@@ -240,6 +240,7 @@ class ChipAdapter(
     private var selectedKey: String,
     private val onSelect: (ChipOption) -> Unit
 ) : RecyclerView.Adapter<ChipAdapter.VH>() {
+    var plainText=false
 
     class VH(val tv: TextView) : RecyclerView.ViewHolder(tv)
 
@@ -261,6 +262,12 @@ class ChipAdapter(
 
     override fun onBindViewHolder(holder: VH, position: Int) {
         val chip = chips[position]
+        if(plainText){
+            holder.tv.setBackgroundResource(R.drawable.selector_category_text)
+            holder.tv.setTextColor(android.content.res.ColorStateList.valueOf(Color.LTGRAY))
+            holder.tv.setTextColor(holder.tv.context.getColorStateList(R.color.color_category_text))
+            holder.tv.typeface=android.graphics.Typeface.DEFAULT
+        }
         holder.tv.text = chip.label
         holder.tv.isSelected = (chip.key == selectedKey)
         holder.tv.setOnClickListener { onSelect(chip) }
@@ -345,12 +352,12 @@ class EpisodeAdapter(
             holder.date.visibility = View.GONE
             holder.progressBar.visibility = View.GONE
             holder.statusMeta.text = String.format("S%02d · E%02d • %s", ep.season, ep.episodeNumber, ep.released ?: "")
-            holder.statusMeta.setTextColor(Color.parseColor("#10B981"))
+            holder.statusMeta.setTextColor(Color.LTGRAY)
             holder.actionHint.text = "▶ Rewatch"
         } else if (resumeRatio > 0.02f) {
             holder.badge.text = "E%02d • RESUME".format(ep.episodeNumber)
             holder.watchedBadge.visibility = View.GONE
-            holder.date.visibility = View.VISIBLE
+            holder.date.visibility = View.GONE
             holder.date.text = ep.released ?: ""
             holder.progressBar.visibility = View.VISIBLE
             holder.progressBar.progress = (resumeRatio * 1000).toInt().coerceIn(30, 1000)
@@ -364,7 +371,7 @@ class EpisodeAdapter(
         } else {
             holder.badge.text = "E%02d".format(ep.episodeNumber)
             holder.watchedBadge.visibility = View.GONE
-            holder.date.visibility = View.VISIBLE
+            holder.date.visibility = View.GONE
             holder.date.text = ep.released ?: ""
             holder.progressBar.visibility = View.GONE
             holder.statusMeta.text = String.format("S%02d · E%02d • %s", ep.season, ep.episodeNumber, ep.released ?: "Ready")
@@ -379,8 +386,8 @@ class EpisodeAdapter(
                 onEpisodeFocused?.invoke(ep)
             }
             v.animate()
-                .scaleX(if (hasFocus) 1.04f else 1f)
-                .scaleY(if (hasFocus) 1.04f else 1f)
+                .scaleX(if (hasFocus) 1.015f else 1f)
+                .scaleY(if (hasFocus) 1.015f else 1f)
                 .translationZ(if (hasFocus) 8f else 0f)
                 .setDuration(130)
                 .setInterpolator(interpolator)
@@ -476,8 +483,8 @@ class StreamAdapter(
                 onStreamFocused?.invoke(s)
             }
             v.animate()
-                .scaleX(if (hasFocus) 1.04f else 1f)
-                .scaleY(if (hasFocus) 1.04f else 1f)
+                .scaleX(if (hasFocus) 1.015f else 1f)
+                .scaleY(if (hasFocus) 1.015f else 1f)
                 .translationZ(if (hasFocus) 8f else 0f)
                 .setDuration(120)
                 .setInterpolator(interpolator)

@@ -116,7 +116,9 @@ object WatchHistoryManager {
         }
 
         // For series, advance pointer hint to next episode when current episode finishes, or keep active position
-        val nextEp = if (isCompleted) episode + 1 else episode
+        val knownNext = if(isCompleted && !type.equals("movie",true)) CinemetaRepository.nextEpisode(type,id,season,episode) else null
+        val nextSeason=knownNext?.season ?: season
+        val nextEp=knownNext?.episodeNumber ?: if(isCompleted)episode+1 else episode
         val effectivePos = if (isCompleted) 0L else positionMs
         val effectiveDur = if (isCompleted) 0L else durationMs
         val cleanTitle = title.ifEmpty { prev?.title ?: id }
@@ -135,7 +137,7 @@ object WatchHistoryManager {
                     title = cleanTitle,
                     poster = cleanPoster,
                     backdrop = cleanBackdrop,
-                    season = season,
+                    season = nextSeason,
                     episode = nextEp,
                     episodeTitle = cleanEpTitle,
                     positionMs = effectivePos,

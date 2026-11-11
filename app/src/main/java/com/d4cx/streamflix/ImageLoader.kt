@@ -121,12 +121,21 @@ object ImageLoader {
                 return null
             }
 
-            val bytes = connection.inputStream.readBytes()
+            val bytes = connection.inputStream.use { input ->
+                val out=java.io.ByteArrayOutputStream();val buffer=ByteArray(8192)
+                while(true){val n=input.read(buffer);if(n<0)break;if(out.size()+n>6*1024*1024)return null;out.write(buffer,0,n)}
+                out.toByteArray()
+            }
             if (bytes.isEmpty()) return null
 
             if (diskFile != null && bytes.size < 2 * 1024 * 1024) {
                 try {
-                    FileOutputStream(diskFile).use { it.write(bytes) }
+                    synchronized(this) {
+                        val temp=File(diskFile.parentFile,diskFile.name+".tmp")
+                        FileOutputStream(temp).use { it.write(bytes) }
+                        if(!temp.renameTo(diskFile))temp.delete()
+                        trimDiskCache()
+                    }
                 } catch (_: Exception) {}
             }
 

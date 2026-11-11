@@ -771,7 +771,7 @@ class MainActivity : Activity() {
             currentSearchTopMatch?.let { handleCatalogItemClick(it) }
         }
 
-        rvSearchResults.layoutManager = GridLayoutManager(this, 4)
+        rvSearchResults.layoutManager = GridLayoutManager(this, 5)
         searchResultsAdapter = ShelfPosterAdapter(emptyList(), fullWidthMode = true, { item ->
             handleCatalogItemClick(item)
         })
@@ -818,24 +818,22 @@ class MainActivity : Activity() {
         searchTopMatchCard.visibility = View.GONE
         searchResultsAdapter.update(emptyList())
         tvSearchStatus.visibility = View.VISIBLE
-        tvSearchStatus.text = "Use D-Pad keypad or quick tags on the left"
+        tvSearchStatus.text = "Find something to watch"
     }
 
     private fun executeSearch(query: String) {
         if (query.length < 2) return
         tvSearchHeader.text = "Searching \"$query\"..."
         tvSearchStatus.visibility = View.VISIBLE
-        tvSearchStatus.text = "Querying IMDb Suggest, Cinemeta & Kitsu..."
+        tvSearchStatus.text = "Searching…"
 
         activeSearchFuture?.cancel(true)
         activeSearchFuture = backgroundExecutor.submit {
             val res = CinemetaRepository.search(query)
             mainHandler.post {
-                if (inputSearch.text.toString().trim().equals(query, ignoreCase = true) ||
-                    inputSearch.text.toString().trim().length >= 2
-                ) {
+                if (!isDestroyed && inputSearch.text.toString().trim().equals(query, ignoreCase = true)) {
                     allSearchResults = res
-                    tvSearchHeader.text = "Results for \"$query\" (${res.size})"
+                    tvSearchHeader.text = "Search"
                     renderFilteredSearchResults()
                 }
             }
@@ -861,7 +859,7 @@ class MainActivity : Activity() {
         tvSearchStatus.visibility = View.GONE
         val top = filtered.first()
         currentSearchTopMatch = top
-        searchTopMatchCard.visibility = View.VISIBLE
+        searchTopMatchCard.visibility = View.GONE
         topMatchTitle.text = top.name.substringBefore(" (")
         val typeLabel = if (top.type.equals("movie", true)) "MOVIE" else "TV SERIES"
         val ratingStr = if (!top.imdbRating.isNullOrEmpty()) "★ ${top.imdbRating} • " else ""
@@ -870,28 +868,32 @@ class MainActivity : Activity() {
             ?: "Top match across Cinemeta, IMDb & Kitsu. Press OK for details & instant streams."
         ImageLoader.load(top.poster, topMatchPoster, 180, 270)
 
-        searchResultsAdapter.update(filtered.drop(1))
+        searchResultsAdapter.update(filtered)
     }
 
     // ====================================================================
     // TAB 2: CATEGORIES & DISCOVER (5-COLUMN GRID)
     // ====================================================================
     private fun setupCategoriesScreen() {
-        rvCatTypes.layoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
+        rvCatTypes.layoutManager = LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false)
         catTypeAdapter = ChipAdapter(
             chips = listOf(
-                ChipOption("all", "All Titles"),
+                ChipOption("all", "All"),
                 ChipOption("movie", "Movies"),
-                ChipOption("series", "TV Series"),
+                ChipOption("series", "Series"),
                 ChipOption("anime", "Anime"),
-                ChipOption("cartoons", "Arabic & Cartoons")
+                ChipOption("cartoons", "Cartoons"),
+                ChipOption("arabic", "Arabic")
             ),
             selectedKey = currentCategoryKey
         ) { chip ->
             currentCategoryKey = chip.key
+            arabicCatalogPage=1
+            catGenreAdapter.update(if(chip.key=="arabic")arabicCatalogFilters else regularCatalogFilters,if(chip.key=="arabic")arabicCatalogKind else currentGenreKey)
             catTypeAdapter.setSelected(chip.key)
             loadCategoriesCatalog()
         }
+        catTypeAdapter.plainText=true
         rvCatTypes.adapter = catTypeAdapter
 
         rvCatGenres.layoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
@@ -906,22 +908,57 @@ class MainActivity : Activity() {
             ),
             selectedKey = currentGenreKey
         ) { chip ->
-            currentGenreKey = chip.key
+            if(currentCategoryKey=="arabic"){arabicCatalogKind=chip.key;arabicCatalogPage=1}
+            else currentGenreKey = chip.key
             catGenreAdapter.setSelected(chip.key)
             loadCategoriesCatalog()
         }
+        catGenreAdapter.plainText=true
         rvCatGenres.adapter = catGenreAdapter
+        findViewById<TextView>(R.id.arabicPrev).setOnClickListener{if(arabicCatalogPage>1){arabicCatalogPage--;loadCategoriesCatalog()}}
+        findViewById<TextView>(R.id.arabicNext).setOnClickListener{if(arabicCatalogHasNext){arabicCatalogPage++;loadCategoriesCatalog()}}
 
-        rvCatGrid.layoutManager = GridLayoutManager(this, 5)
+        rvCatGrid.layoutManager = GridLayoutManager(this, 6)
         catGridAdapter = CatalogAdapter(emptyList()) { item, _ ->
             handleCatalogItemClick(item)
         }
         rvCatGrid.adapter = catGridAdapter
     }
 
+    private var arabicCatalogPage=1
+    private var arabicCatalogKind="all"
+    private var arabicCatalogHasNext=false
+    private val arabicCatalogFilters=listOf(ChipOption("all","All"),ChipOption("movies","Movies"),ChipOption("series","Series & anime"))
+    private val regularCatalogFilters=listOf(ChipOption("Popular","Popular"),ChipOption("Action & Sci-Fi","Action & Sci-Fi"),ChipOption("Thriller","Thriller"),ChipOption("Comedy","Comedy"),ChipOption("Drama","Drama"),ChipOption("Top Rated","Top Rated"))
+    private fun loadArabicCatalog(){
+        val page=arabicCatalogPage;val kind=arabicCatalogKind
+        catGridAdapter.updateItems(emptyList())
+        tvCatLoading.visibility=View.VISIBLE;tvCatLoading.text="Loading…"
+        findViewById<TextView>(R.id.arabicPageLabel).text="Page $page · StarDima"
+        findViewById<TextView>(R.id.arabicNext).isEnabled=false
+        findViewById<TextView>(R.id.arabicPrev).isEnabled=page>1
+        activeCatalogFuture?.cancel(true)
+        activeCatalogFuture=backgroundExecutor.submit{
+            val result=runCatching{ArabicCatalog.page(kind,page)}
+            mainHandler.post{
+                if(isDestroyed||currentCategoryKey!="arabic"||arabicCatalogPage!=page||arabicCatalogKind!=kind)return@post
+                val data=result.getOrNull()
+                arabicCatalogHasNext=data?.hasNext==true
+                findViewById<TextView>(R.id.arabicNext).isEnabled=arabicCatalogHasNext
+                if(data==null){tvCatLoading.text="Provider unavailable · select Arabic to retry"}
+                else {
+                    catGridAdapter.updateItems(data.items);rvCatGrid.scrollToPosition(0)
+                    tvCatLoading.visibility=if(data.items.isEmpty())View.VISIBLE else View.GONE
+                    tvCatLoading.text="No titles on this page"
+                }
+            }
+        }
+    }
     private fun loadCategoriesCatalog() {
         catLoadedOnce = true
         val cat = currentCategoryKey
+        findViewById<View>(R.id.arabicCatalogPager).visibility=if(cat=="arabic")View.VISIBLE else View.GONE
+        if(cat=="arabic"){loadArabicCatalog();return}
         val genre = currentGenreKey
 
         val headerTitle = when (cat) {
@@ -931,7 +968,7 @@ class MainActivity : Activity() {
             "cartoons" -> "Arabic Dub & Cartoon Classics"
             else -> "Discover All • $genre"
         }
-        tvCatHeaderTitle.text = headerTitle
+        tvCatHeaderTitle.text = "Discover"
         tvCatLoading.visibility = View.VISIBLE
         tvCatLoading.text = "Loading $headerTitle..."
 
@@ -956,7 +993,7 @@ class MainActivity : Activity() {
     // TAB 3: MY LIBRARY
     // ====================================================================
     private fun setupLibraryScreen() {
-        rvLibraryGrid.layoutManager = GridLayoutManager(this, 5)
+        rvLibraryGrid.layoutManager = GridLayoutManager(this, 6)
         libraryAdapter = CatalogAdapter(emptyList()) { item, _ ->
             handleCatalogItemClick(item)
         }
@@ -1017,7 +1054,7 @@ class MainActivity : Activity() {
             Toast.makeText(this, "Wiping rolling cache...", Toast.LENGTH_SHORT).show()
             JewEngineManager.wipeCache(this) {
                 mainHandler.post {
-                    Toast.makeText(this, "Engine & image cache cleared.", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "Torrent cache cleared.", Toast.LENGTH_SHORT).show()
                     refreshSettingsView()
                 }
             }
@@ -1279,8 +1316,12 @@ class MainActivity : Activity() {
         overlay.animate().alpha(1f).setDuration(150).start()
         btnMoviePlayBest.postDelayed({ btnMoviePlayBest.requestFocus() }, 90)
 
+        movieDetailRating.visibility=if(item.id.startsWith("arabic:"))View.GONE else View.VISIBLE
+        if(item.id.startsWith("arabic:")){
+            movieDetailOverview.text="";movieDetailCast.text="";tvMovieStreamCount.text="StarDima"
+        }
         backgroundExecutor.execute {
-            val meta = CinemetaRepository.fetchDeepMeta(item.type, item.id)
+            val meta = if(item.id.startsWith("arabic:"))null else CinemetaRepository.fetchDeepMeta(item.type, item.id)
             mainHandler.post {
                 if (currentMovieItem?.id == item.id && meta != null) {
                     if (!meta.description.isNullOrEmpty()) movieDetailOverview.text = meta.description
@@ -1399,11 +1440,11 @@ class MainActivity : Activity() {
         rvSeriesSeasons.layoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
         seasonChipAdapter = ChipAdapter(emptyList(), "1") { chip ->
             val seasonNum = chip.key.toIntOrNull() ?: return@ChipAdapter
-            selectSeriesSeason(seasonNum, moveFocusToEpisode = false)
+            if(arabicMode)showArabicRows(seasonNum) else selectSeriesSeason(seasonNum, moveFocusToEpisode = false)
         }
         rvSeriesSeasons.adapter = seasonChipAdapter
 
-        rvSeriesEpisodes.layoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
+        rvSeriesEpisodes.layoutManager = LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false)
         episodeAdapter = EpisodeAdapter(
             episodes = emptyList(),
             currentSeriesId = "",
@@ -1420,6 +1461,7 @@ class MainActivity : Activity() {
 
         btnSeriesResume.setOnClickListener {
             val series = currentSeriesItem ?: return@setOnClickListener
+            if(arabicMode){playFirstArabic();return@setOnClickListener}
             val target = resolveTargetResumeEpisode(series)
             launchSeriesEpisode(series, target)
         }
@@ -1435,16 +1477,50 @@ class MainActivity : Activity() {
             ).show()
         }
 
+        val mode=findViewById<android.widget.Switch>(R.id.episodeOrderMode)
+        mode.setOnCheckedChangeListener { _, checked ->
+            if(arabicMode!=checked){
+                arabicMode=checked
+                epPrewarmRunnable?.let{mainHandler.removeCallbacks(it)}
+                seasonChipAdapter.update(emptyList(),"")
+                rvSeriesEpisodes.adapter=null
+                if(checked)loadArabicPanel() else {
+                    btnSeriesResume.text="▶  Play episode";btnSeriesPickSource.text="Choose source"
+                    val item=currentSeriesItem
+                    if(item!=null)backgroundExecutor.execute {
+                        val meta=CinemetaRepository.fetchDeepMeta(item.type,item.id)
+                        mainHandler.post{if(!isDestroyed&&!arabicMode&&currentSeriesItem?.id==item.id){
+                            rvSeriesEpisodes.adapter=episodeAdapter
+                            if(meta!=null)applySeriesDeepMeta(meta,item)
+                        }}
+                    }
+                }
+            }
+        }
         btnSeriesPickSource.setOnClickListener {
             val series = currentSeriesItem ?: return@setOnClickListener
+            if(arabicMode){rvSeriesEpisodes.requestFocus();return@setOnClickListener}
             val ep = lastFocusedEpisode ?: resolveTargetResumeEpisode(series)
             showEpisodeSourcePickerDialog(series, ep)
         }
     }
 
+    private var arabicSeason=1
+    private fun playFirstArabic(){
+        val series=currentSeriesItem?:return
+        val rows=arabicRows.filter{it.season==arabicSeason}
+        if(rows.isNotEmpty())PlayerActivity.startBroadcast(this,series,rows,0)
+        else Toast.makeText(this,"No Arabic broadcasts available",Toast.LENGTH_SHORT).show()
+    }
+    private var arabicMode=false
+    private var arabicRows:List<ArabicBroadcast> = emptyList()
     private fun openSeriesDetail(item: CatalogItem) {
         val overlay = ensureDetailSeriesInflated()
         lastFocusedBeforeOverlay = currentFocus
+        findViewById<android.widget.Switch>(R.id.episodeOrderMode).isEnabled=true
+        arabicMode=false;arabicRows=emptyList();rvSeriesEpisodes.adapter=episodeAdapter
+        btnSeriesPickSource.text="Choose source"
+        findViewById<android.widget.Switch>(R.id.episodeOrderMode).isChecked=false
         currentSeriesItem = item
         lastFocusedEpisode = null
         currentEpisodesBySeason = emptyMap()
@@ -1491,10 +1567,17 @@ class MainActivity : Activity() {
         overlay.animate().alpha(1f).setDuration(150).start()
         btnSeriesResume.postDelayed({ btnSeriesResume.requestFocus() }, 90)
 
+        if(item.id.startsWith("arabic:")){
+            seriesDetailRating.visibility=View.GONE;seriesDetailCounts.text="StarDima"
+            seriesDetailOverview.text="";seriesDetailGenres.text="Arabic"
+            findViewById<android.widget.Switch>(R.id.episodeOrderMode).apply{isChecked=true;isEnabled=false}
+            return
+        }
+        seriesDetailRating.visibility=View.VISIBLE
         backgroundExecutor.execute {
             val deep = CinemetaRepository.fetchDeepMeta(item.type, item.id)
             mainHandler.post {
-                if (currentSeriesItem?.id == item.id) {
+                if (currentSeriesItem?.id == item.id && !arabicMode) {
                     if (deep != null) {
                         applySeriesDeepMeta(deep, item)
                     } else {
@@ -1655,6 +1738,72 @@ class MainActivity : Activity() {
             preloadedStreams = preloadedStreams,
             selectedStreamIndex = streamIdx
         )
+    }
+
+    private fun loadArabicPanel(){
+        val series=currentSeriesItem?:return
+        seasonChipAdapter.update(emptyList(),"");arabicRows=emptyList()
+        tvSeriesEpLoading.visibility=View.VISIBLE;tvSeriesEpLoading.text="Looking for Arabic broadcasts…"
+        rvSeriesEpisodes.adapter=null
+        backgroundExecutor.execute{
+            val result=runCatching{ArabicBroadcasts.list(series.id,series.name)}
+            val rows=result.getOrDefault(emptyList())
+            mainHandler.post{
+                if(isDestroyed||!arabicMode||currentSeriesItem?.id!=series.id)return@post
+                arabicRows=rows
+                seasonChipAdapter.update(rows.map{it.season}.distinct().map{ChipOption(it.toString(),if(it==0)"Specials" else "Season $it")},rows.firstOrNull()?.season?.toString()?:"1")
+                showArabicRows(rows.firstOrNull()?.season?:1)
+                if(result.isFailure)tvSeriesEpLoading.text="Could not reach the Arabic provider. Switch Arabic off and on to retry."
+            }
+        }
+    }
+    private fun showArabicRows(season:Int){
+        arabicSeason=season
+        btnSeriesResume.text="▶  Play Arabic broadcast"
+        btnSeriesPickSource.text="Choose broadcast"
+        val series=currentSeriesItem?:return
+        val rows=arabicRows.filter{it.season==season}
+        tvSeriesEpLoading.visibility=if(rows.isEmpty())View.VISIBLE else View.GONE
+        tvSeriesEpLoading.text="No Arabic broadcasts found for this selection. Try another season or your configured addon."
+        rvSeriesEpisodes.adapter=object:RecyclerView.Adapter<ArabicRowHolder>(){
+            override fun getItemCount()=rows.size
+            override fun onCreateViewHolder(parent:ViewGroup,type:Int):ArabicRowHolder=ArabicRowHolder(layoutInflater.inflate(R.layout.item_episode_card,parent,false))
+            override fun onBindViewHolder(h:ArabicRowHolder,index:Int){
+                val row=rows[index];h.title.text=row.label;h.meta.text="Arabic · Provider broadcast order"
+                ImageLoader.load(row.thumbnail,h.image,188,108)
+                h.itemView.setOnFocusChangeListener{v,focused->v.animate().alpha(if(focused)1f else .8f).setDuration(120).start()}
+                h.itemView.setOnClickListener{PlayerActivity.startBroadcast(this@MainActivity,series,rows,index)}
+            }
+        }
+    }
+    private class ArabicRowHolder(v:View):RecyclerView.ViewHolder(v){
+        val title=v.findViewById<TextView>(R.id.epTitle);val meta=v.findViewById<TextView>(R.id.epStatusMeta);val image=v.findViewById<ImageView>(R.id.epThumbnail)
+    }
+
+    private fun showArabicBroadcasts(series: CatalogItem) {
+        if(!ArabicBroadcasts.supports(series.id)){Toast.makeText(this,"No Arabic provider configured for this show yet",Toast.LENGTH_LONG).show();return}
+        val loading=android.app.AlertDialog.Builder(this).setTitle("Arabic broadcasts")
+            .setMessage("Finding available broadcasts. Provider numbering may differ from story order.")
+            .setNegativeButton("Cancel",null).show()
+        backgroundExecutor.execute {
+            val result=runCatching{ArabicBroadcasts.list(series.id,series.name)}
+            mainHandler.post {
+                if(isDestroyed || !loading.isShowing)return@post
+                loading.dismiss()
+                val rows=result.getOrNull().orEmpty()
+                if(rows.isEmpty()){
+                    android.app.AlertDialog.Builder(this).setTitle("Arabic broadcasts")
+                        .setMessage("No playable broadcast listing was found. This does not mean every season is dubbed. Try your configured addon or check this provider later.")
+                        .setPositiveButton("OK",null).show()
+                } else {
+                    android.app.AlertDialog.Builder(this).setTitle("${series.name.substringBefore(" (")} · Arabic broadcast order")
+                        .setItems(rows.map{it.label}.toTypedArray()){_, index ->
+                            val item=rows[index]
+                            PlayerActivity.startBroadcast(this,series,rows,index)
+                        }.setNegativeButton("Back",null).show()
+                }
+            }
+        }
     }
 
     private fun showEpisodeSourcePickerDialog(series: CatalogItem, ep: EpisodeItem) {
@@ -1944,7 +2093,6 @@ class MainActivity : Activity() {
         activeMovieStreamsFuture?.cancel(true)
         mainHandler.removeCallbacksAndMessages(null)
         backgroundExecutor.shutdownNow()
-        JewEngineManager.wipeCache(this)
         super.onDestroy()
     }
 }

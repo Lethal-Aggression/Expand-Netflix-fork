@@ -1,362 +1,47 @@
-<?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/detailMovieOverlay"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="@color/obsidian_bg">
-
-    <ImageView
-        android:id="@+id/movieDetailBackdrop"
-        android:layout_width="680dp"
-        android:layout_height="340dp"
-        android:layout_gravity="top|end"
-        android:scaleType="centerCrop"
-        android:contentDescription="Movie Backdrop" />
-
-    <View
-        android:layout_width="560dp"
-        android:layout_height="match_parent"
-        android:layout_gravity="start"
-        android:background="@drawable/bg_hero_scrim_left" />
-
-    <View
-        android:layout_width="match_parent"
-        android:layout_height="220dp"
-        android:layout_gravity="bottom"
-        android:background="@drawable/bg_hero_scrim_bottom" />
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="vertical"
-        android:paddingStart="28dp"
-        android:paddingEnd="28dp"
-        android:paddingTop="18dp"
-        android:paddingBottom="18dp">
-
-        <!-- Top Row -->
-        <RelativeLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content">
-
-            <TextView
-                android:id="@+id/btnMovieDetailBack"
-                android:layout_width="wrap_content"
-                android:layout_height="32dp"
-                android:layout_alignParentStart="true"
-                android:layout_centerVertical="true"
-                android:gravity="center"
-                android:paddingStart="14dp"
-                android:paddingEnd="14dp"
-                android:background="@drawable/selector_pill_secondary"
-                android:text="←  Back"
-                android:textColor="#F8FAFC"
-                android:textSize="11.5sp"
-                android:textStyle="bold"
-                android:focusable="true"
-                android:clickable="true" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_alignParentEnd="true"
-                android:layout_centerVertical="true"
-                android:text="JewFlix"
-                android:textColor="#FFFFFF"
-                android:textSize="16sp"
-                android:textStyle="bold"
-                android:fontFamily="sans-serif-black" />
-        </RelativeLayout>
-
-        <!-- Hero Metadata Block -->
-        <LinearLayout
-            android:layout_width="540dp"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:layout_marginTop="16dp">
-
-            <LinearLayout
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical">
-
-                <TextView
-                    android:id="@+id/movieDetailRating"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:background="@drawable/bg_pill_gold"
-                    android:paddingStart="8dp"
-                    android:paddingEnd="8dp"
-                    android:paddingTop="2.5dp"
-                    android:paddingBottom="2.5dp"
-                    android:text="★ 8.7 IMDb"
-                    android:textColor="#FBBF24"
-                    android:textSize="10sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/movieDetailYear"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="7dp"
-                    android:background="@drawable/bg_pill"
-                    android:paddingStart="8dp"
-                    android:paddingEnd="8dp"
-                    android:paddingTop="2.5dp"
-                    android:paddingBottom="2.5dp"
-                    android:text="2014"
-                    android:textColor="#E2E8F0"
-                    android:textSize="10sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/movieDetailRuntime"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="7dp"
-                    android:background="@drawable/bg_pill"
-                    android:paddingStart="8dp"
-                    android:paddingEnd="8dp"
-                    android:paddingTop="2.5dp"
-                    android:paddingBottom="2.5dp"
-                    android:text="Feature"
-                    android:textColor="#CBD5E1"
-                    android:textSize="10sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/movieDetailGenres"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="10dp"
-                    android:textColor="#9CA3AF"
-                    android:textSize="10.5sp"
-                    android:maxLines="1"
-                    android:ellipsize="end" />
-            </LinearLayout>
-
-            <TextView
-                android:id="@+id/movieDetailTitle"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
-                android:text="INTERSTELLAR"
-                android:textColor="#FFFFFF"
-                android:textSize="28sp"
-                android:textStyle="bold"
-                android:maxLines="2"
-                android:ellipsize="end" />
-
-            <TextView
-                android:id="@+id/movieDetailOverview"
-                android:layout_width="490dp"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:textColor="#CBD5E1"
-                android:textSize="11.5sp"
-                android:lineSpacingExtra="2dp"
-                android:maxLines="3"
-                android:ellipsize="end" />
-
-            <TextView
-                android:id="@+id/movieDetailCast"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
-                android:textColor="#788294"
-                android:textSize="10.5sp"
-                android:maxLines="1"
-                android:ellipsize="end" />
-
-            <LinearLayout
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:layout_marginTop="14dp">
-
-                <TextView
-                    android:id="@+id/btnMoviePlayBest"
-                    android:layout_width="wrap_content"
-                    android:layout_height="35dp"
-                    android:gravity="center"
-                    android:paddingStart="18dp"
-                    android:paddingEnd="18dp"
-                    android:background="@drawable/selector_pill_primary"
-                    android:text="▶  Watch Best Source"
-                    android:textColor="#050507"
-                    android:textSize="11.5sp"
-                    android:textStyle="bold"
-                    android:focusable="true"
-                    android:clickable="true" />
-
-                <TextView
-                    android:id="@+id/btnMovieLibrary"
-                    android:layout_width="wrap_content"
-                    android:layout_height="35dp"
-                    android:layout_marginStart="10dp"
-                    android:gravity="center"
-                    android:paddingStart="16dp"
-                    android:paddingEnd="16dp"
-                    android:background="@drawable/selector_pill_secondary"
-                    android:text="+ Library"
-                    android:textColor="#F8FAFC"
-                    android:textSize="11.5sp"
-                    android:textStyle="bold"
-                    android:focusable="true"
-                    android:clickable="true" />
-
-                <TextView
-                    android:id="@+id/btnMovieWatched"
-                    android:layout_width="wrap_content"
-                    android:layout_height="35dp"
-                    android:layout_marginStart="10dp"
-                    android:gravity="center"
-                    android:paddingStart="16dp"
-                    android:paddingEnd="16dp"
-                    android:background="@drawable/selector_pill_secondary"
-                    android:text="✓ Mark Watched"
-                    android:textColor="#F8FAFC"
-                    android:textSize="11.5sp"
-                    android:textStyle="bold"
-                    android:focusable="true"
-                    android:clickable="true" />
-            </LinearLayout>
-        </LinearLayout>
-
-        <View
-            android:layout_width="1dp"
-            android:layout_height="0dp"
-            android:layout_weight="1" />
-
-        <!-- STREAM SOURCES SHELF -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical">
-
-            <RelativeLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="10dp">
-
-                <LinearLayout
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_alignParentStart="true"
-                    android:layout_centerVertical="true"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Stream Sources"
-                        android:textColor="#FFFFFF"
-                        android:textSize="15sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:id="@+id/tvMovieStreamCount"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="10dp"
-                        android:text="• Searching Torrentio..."
-                        android:textColor="#788294"
-                        android:textSize="10.5sp" />
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_alignParentEnd="true"
-                    android:layout_centerVertical="true"
-                    android:orientation="horizontal">
-
-                    <TextView
-                        android:id="@+id/chipSrcAll"
-                        android:layout_width="wrap_content"
-                        android:layout_height="28dp"
-                        android:layout_marginEnd="6dp"
-                        android:gravity="center"
-                        android:paddingStart="12dp"
-                        android:paddingEnd="12dp"
-                        android:background="@drawable/selector_chip_pill"
-                        android:text="All"
-                        android:textColor="@color/color_chip_text"
-                        android:textSize="10.5sp"
-                        android:textStyle="bold"
-                        android:focusable="true"
-                        android:clickable="true" />
-
-                    <TextView
-                        android:id="@+id/chipSrc4K"
-                        android:layout_width="wrap_content"
-                        android:layout_height="28dp"
-                        android:layout_marginEnd="6dp"
-                        android:gravity="center"
-                        android:paddingStart="12dp"
-                        android:paddingEnd="12dp"
-                        android:background="@drawable/selector_chip_pill"
-                        android:text="4K HDR"
-                        android:textColor="@color/color_chip_text"
-                        android:textSize="10.5sp"
-                        android:textStyle="bold"
-                        android:focusable="true"
-                        android:clickable="true" />
-
-                    <TextView
-                        android:id="@+id/chipSrc1080"
-                        android:layout_width="wrap_content"
-                        android:layout_height="28dp"
-                        android:layout_marginEnd="6dp"
-                        android:gravity="center"
-                        android:paddingStart="12dp"
-                        android:paddingEnd="12dp"
-                        android:background="@drawable/selector_chip_pill"
-                        android:text="1080p"
-                        android:textColor="@color/color_chip_text"
-                        android:textSize="10.5sp"
-                        android:textStyle="bold"
-                        android:focusable="true"
-                        android:clickable="true" />
-
-                    <TextView
-                        android:id="@+id/chipSrcArabic"
-                        android:layout_width="wrap_content"
-                        android:layout_height="28dp"
-                        android:gravity="center"
-                        android:paddingStart="12dp"
-                        android:paddingEnd="12dp"
-                        android:background="@drawable/selector_chip_pill"
-                        android:text="Arabic / Multi"
-                        android:textColor="@color/color_chip_text"
-                        android:textSize="10.5sp"
-                        android:textStyle="bold"
-                        android:focusable="true"
-                        android:clickable="true" />
-                </LinearLayout>
-            </RelativeLayout>
-
-            <FrameLayout
-                android:layout_width="match_parent"
-                android:layout_height="132dp">
-
-                <androidx.recyclerview.widget.RecyclerView
-                    android:id="@+id/rvMovieStreams"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:clipToPadding="false" />
-
-                <TextView
-                    android:id="@+id/tvMovieStreamStatus"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center"
-                    android:text="Fetching healthy swarms..."
-                    android:textColor="#6E7687"
-                    android:textSize="12sp" />
-            </FrameLayout>
-        </LinearLayout>
+<?xml version='1.0' encoding='utf-8'?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android" android:id="@+id/detailMovieOverlay" android:layout_width="match_parent" android:layout_height="match_parent" android:background="@color/obsidian_bg">
+  <ImageView android:id="@+id/movieDetailBackdrop" android:layout_width="match_parent" android:layout_height="match_parent" android:layout_gravity="top|end" android:scaleType="centerCrop" android:contentDescription="Movie Backdrop" android:alpha=".6" />
+  <View android:layout_width="560dp" android:layout_height="match_parent" android:layout_gravity="start" android:background="@drawable/bg_hero_scrim_left" />
+  <View android:layout_width="match_parent" android:layout_height="220dp" android:layout_gravity="bottom" android:background="@drawable/bg_hero_scrim_bottom" />
+  <LinearLayout android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:paddingStart="28dp" android:paddingEnd="28dp" android:paddingTop="18dp" android:paddingBottom="18dp">
+    <RelativeLayout android:layout_width="match_parent" android:layout_height="wrap_content">
+      <TextView android:id="@+id/btnMovieDetailBack" android:layout_width="wrap_content" android:layout_height="32dp" android:layout_alignParentStart="true" android:layout_centerVertical="true" android:gravity="center" android:paddingStart="14dp" android:paddingEnd="14dp" android:background="@drawable/selector_pill_secondary" android:text="←  Back" android:textColor="#F8FAFC" android:textSize="11.5sp" android:textStyle="bold" android:focusable="true" android:clickable="true" />
+      <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_alignParentEnd="true" android:layout_centerVertical="true" android:text="JewFlix" android:textColor="#FFFFFF" android:textSize="16sp" android:textStyle="bold" android:fontFamily="sans-serif-black" />
+    </RelativeLayout>
+    <LinearLayout android:layout_width="540dp" android:layout_height="wrap_content" android:orientation="vertical" android:layout_marginTop="16dp">
+      <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical">
+        <TextView android:id="@+id/movieDetailRating" android:layout_width="wrap_content" android:layout_height="wrap_content" android:background="@drawable/bg_pill_gold" android:paddingStart="8dp" android:paddingEnd="8dp" android:paddingTop="2.5dp" android:paddingBottom="2.5dp" android:text="★ 8.7 IMDb" android:textColor="#DDDDDD" android:textSize="10sp" android:textStyle="bold" />
+        <TextView android:id="@+id/movieDetailYear" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="7dp" android:background="@drawable/bg_pill" android:paddingStart="8dp" android:paddingEnd="8dp" android:paddingTop="2.5dp" android:paddingBottom="2.5dp" android:text="2014" android:textColor="#DDDDDD" android:textSize="10sp" android:textStyle="bold" />
+        <TextView android:id="@+id/movieDetailRuntime" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="7dp" android:background="@drawable/bg_pill" android:paddingStart="8dp" android:paddingEnd="8dp" android:paddingTop="2.5dp" android:paddingBottom="2.5dp" android:text="Feature" android:textColor="#CBD5E1" android:textSize="10sp" android:textStyle="bold" />
+        <TextView android:id="@+id/movieDetailGenres" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="10dp" android:textColor="#9CA3AF" android:textSize="10.5sp" android:maxLines="1" android:ellipsize="end" />
+      </LinearLayout>
+      <TextView android:id="@+id/movieDetailTitle" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp" android:text="INTERSTELLAR" android:textColor="#FFFFFF" android:textSize="28sp" android:textStyle="bold" android:maxLines="2" android:ellipsize="end" />
+      <TextView android:id="@+id/movieDetailOverview" android:layout_width="490dp" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:textColor="#CBD5E1" android:textSize="11.5sp" android:lineSpacingExtra="2dp" android:maxLines="3" android:ellipsize="end" />
+      <TextView android:id="@+id/movieDetailCast" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="6dp" android:textColor="#788294" android:textSize="10.5sp" android:maxLines="1" android:ellipsize="end" />
+      <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginTop="14dp">
+        <TextView android:id="@+id/btnMoviePlayBest" android:layout_width="wrap_content" android:layout_height="35dp" android:gravity="center" android:paddingStart="18dp" android:paddingEnd="18dp" android:background="@drawable/selector_pill_primary" android:text="▶  Play" android:textColor="#050507" android:textSize="11.5sp" android:textStyle="bold" android:focusable="true" android:clickable="true" />
+        <TextView android:id="@+id/btnMovieLibrary" android:layout_width="wrap_content" android:layout_height="35dp" android:layout_marginStart="10dp" android:gravity="center" android:paddingStart="16dp" android:paddingEnd="16dp" android:background="@drawable/selector_pill_secondary" android:text="+ Library" android:textColor="#F8FAFC" android:textSize="11.5sp" android:textStyle="bold" android:focusable="true" android:clickable="true" />
+        <TextView android:id="@+id/btnMovieWatched" android:layout_width="wrap_content" android:layout_height="35dp" android:layout_marginStart="10dp" android:gravity="center" android:paddingStart="16dp" android:paddingEnd="16dp" android:background="@drawable/selector_pill_secondary" android:text="✓ Watched" android:textColor="#F8FAFC" android:textSize="11.5sp" android:textStyle="bold" android:focusable="true" android:clickable="true" />
+      </LinearLayout>
     </LinearLayout>
+    <View android:layout_width="1dp" android:layout_height="0dp" android:layout_weight="1" />
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
+      <RelativeLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="10dp">
+        <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_alignParentStart="true" android:layout_centerVertical="true" android:orientation="horizontal" android:gravity="center_vertical">
+          <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Stream Sources" android:textColor="#FFFFFF" android:textSize="15sp" android:textStyle="bold" />
+          <TextView android:id="@+id/tvMovieStreamCount" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="10dp" android:text="" android:textColor="#788294" android:textSize="10.5sp" />
+        </LinearLayout>
+        <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_alignParentEnd="true" android:layout_centerVertical="true" android:orientation="horizontal">
+          <TextView android:id="@+id/chipSrcAll" android:layout_width="wrap_content" android:layout_height="28dp" android:layout_marginEnd="6dp" android:gravity="center" android:paddingStart="12dp" android:paddingEnd="12dp" android:background="@drawable/selector_chip_pill" android:text="All" android:textColor="@color/color_chip_text" android:textSize="10.5sp" android:textStyle="bold" android:focusable="true" android:clickable="true" />
+          <TextView android:id="@+id/chipSrc4K" android:layout_width="wrap_content" android:layout_height="28dp" android:layout_marginEnd="6dp" android:gravity="center" android:paddingStart="12dp" android:paddingEnd="12dp" android:background="@drawable/selector_chip_pill" android:text="4K HDR" android:textColor="@color/color_chip_text" android:textSize="10.5sp" android:textStyle="bold" android:focusable="true" android:clickable="true" />
+          <TextView android:id="@+id/chipSrc1080" android:layout_width="wrap_content" android:layout_height="28dp" android:layout_marginEnd="6dp" android:gravity="center" android:paddingStart="12dp" android:paddingEnd="12dp" android:background="@drawable/selector_chip_pill" android:text="1080p" android:textColor="@color/color_chip_text" android:textSize="10.5sp" android:textStyle="bold" android:focusable="true" android:clickable="true" />
+          <TextView android:id="@+id/chipSrcArabic" android:layout_width="wrap_content" android:layout_height="28dp" android:gravity="center" android:paddingStart="12dp" android:paddingEnd="12dp" android:background="@drawable/selector_chip_pill" android:text="Arabic / Multi" android:textColor="@color/color_chip_text" android:textSize="10.5sp" android:textStyle="bold" android:focusable="true" android:clickable="true" />
+        </LinearLayout>
+      </RelativeLayout>
+      <FrameLayout android:layout_width="match_parent" android:layout_height="132dp">
+        <androidx.recyclerview.widget.RecyclerView android:id="@+id/rvMovieStreams" android:layout_width="match_parent" android:layout_height="match_parent" android:clipToPadding="false" />
+        <TextView android:id="@+id/tvMovieStreamStatus" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="center" android:text="Finding available sources…" android:textColor="#6E7687" android:textSize="12sp" />
+      </FrameLayout>
+    </LinearLayout>
+  </LinearLayout>
 </FrameLayout>

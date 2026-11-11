@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="obsidian_bg">#050507</color>
-    <color name="rail_bg">#090B0F</color>
-    <color name="surface_dark">#0B0D12</color>
-    <color name="surface_card">#0F1117</color>
-    <color name="surface_elevated">#151822</color>
-    <color name="border_subtle">#202532</color>
+    <color name="obsidian_bg">#000000</color>
+    <color name="rail_bg">#000000</color>
+    <color name="surface_dark">#101010</color>
+    <color name="surface_card">#111111</color>
+    <color name="surface_elevated">#191919</color>
+    <color name="border_subtle">#292929</color>
     <color name="border_focus">#FFFFFF</color>
     <color name="white">#FFFFFF</color>
     <color name="text_primary">#F8FAFC</color>
     <color name="text_secondary">#B8BEC8</color>
     <color name="text_muted">#6E7687</color>
-    <color name="emerald_ready">#10B981</color>
-    <color name="gold_star">#FBBF24</color>
+    <color name="emerald_ready">#E5E5E5</color>
+    <color name="gold_star">#DADADA</color>
 </resources>

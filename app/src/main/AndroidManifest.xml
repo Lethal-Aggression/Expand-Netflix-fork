@@ -31,7 +31,7 @@
 
         <activity
             android:name=".PlayerActivity"
-            android:exported="true"
+            android:exported="false"
             android:screenOrientation="landscape"
             android:configChanges="orientation|screenSize|screenLayout|keyboardHidden"
             android:theme="@android:style/Theme.NoTitleBar.Fullscreen" />

@@ -1,142 +1,19 @@
-<?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="256dp"
-    android:layout_height="wrap_content"
-    android:layout_marginEnd="12dp"
-    android:focusable="true"
-    android:clickable="true"
-    android:background="@drawable/bg_episode_card"
-    android:orientation="vertical"
-    android:padding="10dp">
-
-    <!-- 16:9 Episode Thumbnail Frame -->
-    <FrameLayout
-        android:layout_width="match_parent"
-        android:layout_height="128dp"
-        android:background="#090B10"
-        android:clipToOutline="true">
-
-        <ImageView
-            android:id="@+id/epThumbnail"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:scaleType="centerCrop"
-            android:contentDescription="Episode Thumbnail" />
-
-        <TextView
-            android:id="@+id/epFallbackText"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:textColor="#64748B"
-            android:textSize="11sp"
-            android:visibility="gone" />
-
-        <TextView
-            android:id="@+id/epBadge"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="top|start"
-            android:layout_margin="7dp"
-            android:paddingStart="7dp"
-            android:paddingEnd="7dp"
-            android:paddingTop="2.5dp"
-            android:paddingBottom="2.5dp"
-            android:background="#D0050507"
-            android:textColor="#FFFFFF"
-            android:textSize="9.5sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:id="@+id/epWatchedBadge"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="top|end"
-            android:layout_margin="7dp"
-            android:paddingStart="7dp"
-            android:paddingEnd="7dp"
-            android:paddingTop="2.5dp"
-            android:paddingBottom="2.5dp"
-            android:background="#D910B981"
-            android:text="✓ WATCHED"
-            android:textColor="#FFFFFF"
-            android:textSize="8.5sp"
-            android:textStyle="bold"
-            android:visibility="gone" />
-
-        <TextView
-            android:id="@+id/epDate"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="top|end"
-            android:layout_margin="7dp"
-            android:paddingStart="6dp"
-            android:paddingEnd="6dp"
-            android:paddingTop="2dp"
-            android:paddingBottom="2dp"
-            android:background="#CC050507"
-            android:textColor="#CBD5E1"
-            android:textSize="9sp" />
-
-        <ProgressBar
-            android:id="@+id/epProgressBar"
-            style="?android:attr/progressBarStyleHorizontal"
-            android:layout_width="match_parent"
-            android:layout_height="3.5dp"
-            android:layout_gravity="bottom"
-            android:max="1000"
-            android:progress="0"
-            android:progressDrawable="@drawable/bg_resume_progress"
-            android:visibility="gone" />
-    </FrameLayout>
-
-    <TextView
-        android:id="@+id/epTitle"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:textColor="#F8FAFC"
-        android:textSize="12.5sp"
-        android:textStyle="bold"
-        android:maxLines="1"
-        android:ellipsize="end" />
-
-    <TextView
-        android:id="@+id/epOverview"
-        android:layout_width="match_parent"
-        android:layout_height="28dp"
-        android:layout_marginTop="3dp"
-        android:textColor="#8E96A4"
-        android:textSize="10sp"
-        android:lineSpacingExtra="1.5dp"
-        android:maxLines="2"
-        android:ellipsize="end" />
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:layout_marginTop="6dp">
-
-        <TextView
-            android:id="@+id/epStatusMeta"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="Ready"
-            android:textColor="#788294"
-            android:textSize="9.5sp"
-            android:maxLines="1"
-            android:ellipsize="end" />
-
-        <TextView
-            android:id="@+id/epActionHint"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="▶ Play"
-            android:textColor="#FFFFFF"
-            android:textSize="10sp"
-            android:textStyle="bold" />
+<?xml version='1.0' encoding='utf-8'?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="76dp" android:layout_marginEnd="0dp" android:focusable="true" android:clickable="true" android:background="@drawable/bg_episode_card" android:orientation="horizontal" android:padding="8dp" android:layout_marginBottom="6dp" android:gravity="center_vertical">
+  <FrameLayout android:layout_width="94dp" android:layout_height="54dp" android:background="#090B10" android:clipToOutline="true">
+    <ImageView android:id="@+id/epThumbnail" android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="centerCrop" android:contentDescription="Episode Thumbnail" />
+    <TextView android:id="@+id/epFallbackText" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="center" android:textColor="#64748B" android:textSize="11sp" android:visibility="gone" />
+    <TextView android:id="@+id/epBadge" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="top|start" android:layout_margin="7dp" android:paddingStart="7dp" android:paddingEnd="7dp" android:paddingTop="2.5dp" android:paddingBottom="2.5dp" android:background="#D0050507" android:textColor="#FFFFFF" android:textSize="9.5sp" android:textStyle="bold" android:visibility="gone" />
+    <TextView android:id="@+id/epWatchedBadge" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="top|end" android:layout_margin="7dp" android:paddingStart="7dp" android:paddingEnd="7dp" android:paddingTop="2.5dp" android:paddingBottom="2.5dp" android:background="#D910B981" android:text="✓ WATCHED" android:textColor="#FFFFFF" android:textSize="8.5sp" android:textStyle="bold" android:visibility="gone" />
+    <TextView android:id="@+id/epDate" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="top|end" android:layout_margin="7dp" android:paddingStart="6dp" android:paddingEnd="6dp" android:paddingTop="2dp" android:paddingBottom="2dp" android:background="#CC050507" android:textColor="#CBD5E1" android:textSize="9sp" />
+    <ProgressBar android:id="@+id/epProgressBar" style="?android:attr/progressBarStyleHorizontal" android:layout_width="match_parent" android:layout_height="3.5dp" android:layout_gravity="bottom" android:max="1000" android:progress="0" android:progressDrawable="@drawable/bg_resume_progress" android:visibility="gone" />
+  </FrameLayout>
+  <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginStart="12dp" android:orientation="vertical">
+    <TextView android:id="@+id/epTitle" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="0dp" android:textColor="#F8FAFC" android:textSize="12sp" android:textStyle="bold" android:maxLines="1" android:ellipsize="end" />
+    <TextView android:id="@+id/epOverview" android:layout_width="match_parent" android:layout_height="28dp" android:layout_marginTop="3dp" android:textColor="#8E96A4" android:textSize="10sp" android:lineSpacingExtra="1.5dp" android:maxLines="2" android:ellipsize="end" android:visibility="gone" />
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:layout_marginTop="6dp">
+      <TextView android:id="@+id/epStatusMeta" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="Ready" android:textColor="#788294" android:textSize="9.5sp" android:maxLines="1" android:ellipsize="end" />
+      <TextView android:id="@+id/epActionHint" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="▶ Play" android:textColor="#FFFFFF" android:textSize="10sp" android:textStyle="bold" android:visibility="gone" />
     </LinearLayout>
+  </LinearLayout>
 </LinearLayout>
